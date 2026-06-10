@@ -1,0 +1,6 @@
+package com.study.management.domain.model;
+
+public enum UserRole {
+    PRIMARY_INVESTIGATOR, CO_INVESTIGATOR, SUB_INVESTIGATOR, CRC, STUDY_COORDINATOR,
+    DATA_MANAGER, MONITOR, SPONSOR_REP, READ_ONLY
+}

@@ -1,0 +1,59 @@
+package com.study.management.infrastructure.web.dto;
+
+import com.study.management.domain.model.PiStatus;
+
+import java.time.OffsetDateTime;
+import java.util.UUID;
+
+public class PiResponse {
+
+    private UUID piId;
+    private String piNumber;
+    private String firstName;
+    private String lastName;
+    private String title;
+    private String credentials;
+    private String specialty;
+    private String email;
+    private String phone;
+    private String npiNumber;
+    private String licenseNumber;
+    private String licenseState;
+    private String cvDocumentUrl;
+    private PiStatus status;
+    private OffsetDateTime createdAt;
+    private OffsetDateTime updatedAt;
+
+    public UUID getPiId()                       { return piId; }
+    public void setPiId(UUID v)                { this.piId = v; }
+    public String getPiNumber()                 { return piNumber; }
+    public void setPiNumber(String v)          { this.piNumber = v; }
+    public String getFirstName()                { return firstName; }
+    public void setFirstName(String v)         { this.firstName = v; }
+    public String getLastName()                 { return lastName; }
+    public void setLastName(String v)          { this.lastName = v; }
+    public String getTitle()                    { return title; }
+    public void setTitle(String v)             { this.title = v; }
+    public String getCredentials()              { return credentials; }
+    public void setCredentials(String v)       { this.credentials = v; }
+    public String getSpecialty()                { return specialty; }
+    public void setSpecialty(String v)         { this.specialty = v; }
+    public String getEmail()                    { return email; }
+    public void setEmail(String v)             { this.email = v; }
+    public String getPhone()                    { return phone; }
+    public void setPhone(String v)             { this.phone = v; }
+    public String getNpiNumber()                { return npiNumber; }
+    public void setNpiNumber(String v)         { this.npiNumber = v; }
+    public String getLicenseNumber()            { return licenseNumber; }
+    public void setLicenseNumber(String v)     { this.licenseNumber = v; }
+    public String getLicenseState()             { return licenseState; }
+    public void setLicenseState(String v)      { this.licenseState = v; }
+    public String getCvDocumentUrl()            { return cvDocumentUrl; }
+    public void setCvDocumentUrl(String v)     { this.cvDocumentUrl = v; }
+    public PiStatus getStatus()                 { return status; }
+    public void setStatus(PiStatus v)          { this.status = v; }
+    public OffsetDateTime getCreatedAt()        { return createdAt; }
+    public void setCreatedAt(OffsetDateTime v) { this.createdAt = v; }
+    public OffsetDateTime getUpdatedAt()        { return updatedAt; }
+    public void setUpdatedAt(OffsetDateTime v) { this.updatedAt = v; }
+}

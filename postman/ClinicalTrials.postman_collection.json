@@ -1,0 +1,538 @@
+{
+  "info": {
+    "name": "Clinical Trials Management API",
+    "description": "Complete API collection for the Clinical Trials Management System. Start the server at http://localhost:8080 then run in order from section 1 through 12.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base",         "value": "http://localhost:8080" },
+    { "key": "mpaId",        "value": "a0000001-0000-0000-0000-000000000001" },
+    { "key": "centerId1",    "value": "c0000001-0000-0000-0000-000000000001" },
+    { "key": "centerId2",    "value": "c0000002-0000-0000-0000-000000000001" },
+    { "key": "piId",         "value": "p0000001-0000-0000-0000-000000000001" },
+    { "key": "studyId",      "value": "s0000001-0000-0000-0000-000000000001" },
+    { "key": "studySiteId",  "value": "ss000001-0000-0000-0000-000000000001" },
+    { "key": "patientId1",   "value": "pt000001-0000-0000-0000-000000000001" },
+    { "key": "patientId2",   "value": "pt000002-0000-0000-0000-000000000001" },
+    { "key": "enrollmentId1","value": "en000001-0000-0000-0000-000000000001" },
+    { "key": "enrollmentId2","value": "en000002-0000-0000-0000-000000000001" },
+    { "key": "paymentId",    "value": "pay00001-0000-0000-0000-000000000001" },
+    { "key": "visitId",      "value": "" },
+    { "key": "accessId",     "value": "" },
+    { "key": "documentId",   "value": "" },
+    { "key": "assignmentId", "value": "" }
+  ],
+  "item": [
+
+    {
+      "name": "1. MPA (Master Provider Agreement)",
+      "item": [
+        {
+          "name": "1.1 Create MPA",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{base}}/api/v1/mpa", "host": ["{{base}}"], "path": ["api","v1","mpa"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"mpaNumber\": \"MPA-2026-002\",\n  \"mpaName\": \"Master Agreement - City Medical Group\",\n  \"organizationName\": \"City Medical Group LLC\",\n  \"contractType\": \"MASTER\",\n  \"effectiveDate\": \"2026-05-01\",\n  \"expirationDate\": \"2029-04-30\",\n  \"contactName\": \"Dr. Sarah Mitchell\",\n  \"contactEmail\": \"s.mitchell@citymedical.com\",\n  \"contactPhone\": \"+1-212-555-0100\",\n  \"notes\": \"Initial 3-year master agreement\"\n}"
+            }
+          }
+        },
+        {
+          "name": "1.2 Get MPA by ID",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base}}/api/v1/mpa/{{mpaId}}", "host": ["{{base}}"], "path": ["api","v1","mpa","{{mpaId}}"] }
+          }
+        },
+        {
+          "name": "1.3 List MPAs",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base}}/api/v1/mpa?status=ACTIVE&page=1&size=20",
+              "host": ["{{base}}"], "path": ["api","v1","mpa"],
+              "query": [
+                { "key": "status", "value": "ACTIVE" },
+                { "key": "page",   "value": "1" },
+                { "key": "size",   "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "1.4 Update MPA",
+          "request": {
+            "method": "PUT",
+            "url": { "raw": "{{base}}/api/v1/mpa/{{mpaId}}", "host": ["{{base}}"], "path": ["api","v1","mpa","{{mpaId}}"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"mpaName\": \"Master Agreement - Metro Health Network (Amended)\",\n  \"expirationDate\": \"2029-12-31\",\n  \"contactName\": \"Dr. James Chen\",\n  \"contactEmail\": \"j.chen@metrohealth.com\",\n  \"notes\": \"Extended by 1 year per amendment A-001\"\n}"
+            }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "2. Medical Centers",
+      "item": [
+        {
+          "name": "2.1 Create Medical Center",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{base}}/api/v1/mpa/{{mpaId}}/centers", "host": ["{{base}}"], "path": ["api","v1","mpa","{{mpaId}}","centers"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"centerCode\": \"MC-003\",\n  \"centerName\": \"Downtown Clinic\",\n  \"centerType\": \"CLINIC\",\n  \"addressLine1\": \"500 Park Avenue\",\n  \"addressLine2\": \"Floor 3\",\n  \"city\": \"Chicago\",\n  \"state\": \"IL\",\n  \"zipCode\": \"60601\",\n  \"country\": \"US\",\n  \"phone\": \"+1-312-555-0200\",\n  \"fax\": \"+1-312-555-0201\",\n  \"email\": \"admin@downtownclinic.com\",\n  \"irbName\": \"Chicago IRB Committee\",\n  \"irbApprovalNumber\": \"IRB-2026-0099\",\n  \"irbApprovalDate\": \"2026-03-01\",\n  \"irbExpiryDate\": \"2027-03-01\"\n}"
+            }
+          }
+        },
+        {
+          "name": "2.2 List Centers by MPA",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base}}/api/v1/mpa/{{mpaId}}/centers?status=ACTIVE&page=1&size=20",
+              "host": ["{{base}}"], "path": ["api","v1","mpa","{{mpaId}}","centers"],
+              "query": [
+                { "key": "status", "value": "ACTIVE" },
+                { "key": "page",   "value": "1" },
+                { "key": "size",   "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "2.3 Get Center Detail",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base}}/api/v1/centers/{{centerId1}}", "host": ["{{base}}"], "path": ["api","v1","centers","{{centerId1}}"] }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "3. Primary Investigators",
+      "item": [
+        {
+          "name": "3.1 Create Primary Investigator",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{base}}/api/v1/investigators", "host": ["{{base}}"], "path": ["api","v1","investigators"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"piNumber\": \"PI-002\",\n  \"firstName\": \"Maria\",\n  \"lastName\": \"Santos\",\n  \"title\": \"Dr.\",\n  \"credentials\": \"MD\",\n  \"specialty\": \"Cardiology\",\n  \"email\": \"m.santos@citymedical.com\",\n  \"phone\": \"+1-312-555-0300\",\n  \"npiNumber\": \"9876543210\",\n  \"licenseNumber\": \"IL-MED-98765\",\n  \"licenseState\": \"IL\",\n  \"cvDocumentUrl\": \"https://docs.internal/cv/santos_maria.pdf\"\n}"
+            }
+          }
+        },
+        {
+          "name": "3.2 Assign PI to Center",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{base}}/api/v1/investigators/{{piId}}/center-assignments", "host": ["{{base}}"], "path": ["api","v1","investigators","{{piId}}","center-assignments"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"centerId\": \"{{centerId2}}\",\n  \"role\": \"CO_INVESTIGATOR\",\n  \"isPrimarySite\": false,\n  \"assignmentDate\": \"2026-05-01\"\n}"
+            }
+          }
+        },
+        {
+          "name": "3.3 Get PI Dashboard",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base}}/api/v1/investigators/{{piId}}/dashboard", "host": ["{{base}}"], "path": ["api","v1","investigators","{{piId}}","dashboard"] }
+          }
+        },
+        {
+          "name": "3.4 List PI Center Assignments",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base}}/api/v1/investigators/{{piId}}/center-assignments?status=ACTIVE",
+              "host": ["{{base}}"], "path": ["api","v1","investigators","{{piId}}","center-assignments"],
+              "query": [{ "key": "status", "value": "ACTIVE" }]
+            }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "4. Studies",
+      "item": [
+        {
+          "name": "4.1 Create Study",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{base}}/api/v1/studies", "host": ["{{base}}"], "path": ["api","v1","studies"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"studyNumber\": \"DEF-AB-002\",\n  \"studyName\": \"Safety Study of Drug Y in Hypertension\",\n  \"indication\": \"Hypertension\",\n  \"phase\": \"PHASE_II\",\n  \"protocolNumber\": \"PROT-2026-HT-002\",\n  \"sponsorName\": \"BioTrial Inc.\",\n  \"therapeuticArea\": \"Cardiology\",\n  \"noOfPatientsToEnroll\": 30,\n  \"totalNumberOfVisits\": 4,\n  \"dateFirstPatientScreening\": \"2026-06-01\",\n  \"dateFirstPatientLastVisit\": \"2026-12-01\",\n  \"dateLastPatientFirstVisit\": \"2026-09-01\",\n  \"dateLastPatientLastVisit\": \"2027-03-01\",\n  \"createdByPiId\": \"{{piId}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "4.2 Get My Studies (PI View)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base}}/api/v1/investigators/{{piId}}/studies?page=1&size=20",
+              "host": ["{{base}}"], "path": ["api","v1","investigators","{{piId}}","studies"],
+              "query": [
+                { "key": "status",     "value": "",         "disabled": true },
+                { "key": "indication", "value": "",         "disabled": true },
+                { "key": "page",       "value": "1" },
+                { "key": "size",       "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "4.3 Get Study Detail",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base}}/api/v1/studies/{{studyId}}", "host": ["{{base}}"], "path": ["api","v1","studies","{{studyId}}"] }
+          }
+        },
+        {
+          "name": "4.4 Disable Study",
+          "request": {
+            "method": "PATCH",
+            "url": { "raw": "{{base}}/api/v1/studies/{{studyId}}/status", "host": ["{{base}}"], "path": ["api","v1","studies","{{studyId}}","status"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"DISABLED\",\n  \"reason\": \"Protocol violation detected — pending investigation\"\n}"
+            }
+          }
+        },
+        {
+          "name": "4.5 Assign Study to Site",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{base}}/api/v1/studies/{{studyId}}/site-assignments", "host": ["{{base}}"], "path": ["api","v1","studies","{{studyId}}","site-assignments"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"centerId\": \"{{centerId2}}\",\n  \"piId\": \"{{piId}}\",\n  \"siteNumber\": \"SITE-02\",\n  \"targetEnrollment\": 20\n}"
+            }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "5. Study Plan (Visit Schedule)",
+      "item": [
+        {
+          "name": "5.1 Upsert Study Plan Visits",
+          "request": {
+            "method": "PUT",
+            "url": { "raw": "{{base}}/api/v1/studies/{{studyId}}/plan-visits", "host": ["{{base}}"], "path": ["api","v1","studies","{{studyId}}","plan-visits"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"visits\": [\n    {\n      \"visitNumber\": 1,\n      \"visitName\": \"Screening\",\n      \"visitType\": \"SCREENING\",\n      \"typeOfVisitOrDose\": \"Screening/Treatment-Dose 1\",\n      \"durationDays\": null,\n      \"durationDisplay\": \"Duration from visit 1(Days)\",\n      \"windowPeriodBefore\": 2,\n      \"windowPeriodAfter\": 3,\n      \"windowPeriodDisplay\": \"2 days | 3 days\",\n      \"dayVisitSpecificCompPattern\": \"once\",\n      \"targetDayOffset\": 0,\n      \"isMandatory\": true,\n      \"requiresFasting\": false,\n      \"procedures\": [\"Physical exam\", \"Blood draw\", \"Informed consent\"],\n      \"visitCost\": 300.00\n    },\n    {\n      \"visitNumber\": 2,\n      \"visitName\": \"Treatment Visit 2\",\n      \"visitType\": \"TREATMENT\",\n      \"typeOfVisitOrDose\": \"Treatment-Dose 2\",\n      \"durationDays\": 30,\n      \"durationDisplay\": \"30 days\",\n      \"windowPeriodBefore\": 3,\n      \"windowPeriodAfter\": 3,\n      \"windowPeriodDisplay\": \"3 days | 3 days\",\n      \"dayVisitSpecificCompPattern\": \"once\",\n      \"targetDayOffset\": 30,\n      \"isMandatory\": true,\n      \"requiresFasting\": true,\n      \"procedures\": [\"Drug administration\", \"Vitals\", \"Blood draw\"],\n      \"visitCost\": 300.00\n    },\n    {\n      \"visitNumber\": 3,\n      \"visitName\": \"Treatment Visit 3\",\n      \"visitType\": \"TREATMENT\",\n      \"typeOfVisitOrDose\": \"Treatment-Dose 3\",\n      \"durationDays\": 60,\n      \"durationDisplay\": \"60 days\",\n      \"windowPeriodBefore\": 3,\n      \"windowPeriodAfter\": 5,\n      \"windowPeriodDisplay\": \"3 days | 5 days\",\n      \"targetDayOffset\": 60,\n      \"isMandatory\": true,\n      \"requiresFasting\": false,\n      \"procedures\": [\"Drug administration\", \"Vitals\", \"ECG\"],\n      \"visitCost\": 300.00\n    },\n    {\n      \"visitNumber\": 4,\n      \"visitName\": \"Follow-Up Visit 4\",\n      \"visitType\": \"FOLLOW_UP\",\n      \"typeOfVisitOrDose\": \"Follow-up\",\n      \"durationDays\": 90,\n      \"durationDisplay\": \"90 days\",\n      \"windowPeriodBefore\": 5,\n      \"windowPeriodAfter\": 5,\n      \"windowPeriodDisplay\": \"5 days | 5 days\",\n      \"targetDayOffset\": 90,\n      \"isMandatory\": true,\n      \"requiresFasting\": false,\n      \"procedures\": [\"Vitals\", \"Blood draw\", \"Adverse event assessment\"],\n      \"visitCost\": 300.00\n    },\n    {\n      \"visitNumber\": 5,\n      \"visitName\": \"End of Study\",\n      \"visitType\": \"END_OF_STUDY\",\n      \"typeOfVisitOrDose\": \"End of Study\",\n      \"durationDays\": 120,\n      \"durationDisplay\": \"120 days\",\n      \"windowPeriodBefore\": 5,\n      \"windowPeriodAfter\": 7,\n      \"windowPeriodDisplay\": \"5 days | 7 days\",\n      \"targetDayOffset\": 120,\n      \"isMandatory\": true,\n      \"requiresFasting\": false,\n      \"procedures\": [\"Full physical exam\", \"Labs\", \"Study drug return\", \"Exit interview\"],\n      \"visitCost\": 300.00\n    }\n  ]\n}"
+            }
+          }
+        },
+        {
+          "name": "5.2 Get Study Plan",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base}}/api/v1/studies/{{studyId}}/plan-visits", "host": ["{{base}}"], "path": ["api","v1","studies","{{studyId}}","plan-visits"] }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "6. Patients",
+      "item": [
+        {
+          "name": "6.1 Create Patient",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{base}}/api/v1/patients", "host": ["{{base}}"], "path": ["api","v1","patients"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"initials\": \"JD\",\n  \"dateOfBirth\": \"1985-03-15\",\n  \"gender\": \"MALE\",\n  \"race\": \"White\",\n  \"ethnicity\": \"Not Hispanic\",\n  \"phone\": \"+1-212-555-0400\",\n  \"email\": \"j.doe@email.com\",\n  \"emergencyContact\": \"Jane Doe\",\n  \"emergencyPhone\": \"+1-212-555-0401\"\n}"
+            }
+          }
+        },
+        {
+          "name": "6.2 Search Patients",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base}}/api/v1/patients?status=ACTIVE&page=1&size=20",
+              "host": ["{{base}}"], "path": ["api","v1","patients"],
+              "query": [
+                { "key": "search", "value": "",       "disabled": true },
+                { "key": "status", "value": "ACTIVE" },
+                { "key": "page",   "value": "1" },
+                { "key": "size",   "value": "20" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "7. Study Enrollments",
+      "item": [
+        {
+          "name": "7.1 Enroll Patient in Study",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{base}}/api/v1/studies/{{studyId}}/enrollments", "host": ["{{base}}"], "path": ["api","v1","studies","{{studyId}}","enrollments"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patientId\": \"{{patientId1}}\",\n  \"studySiteId\": \"{{studySiteId}}\",\n  \"subjectNumber\": \"ABC-XY-001-S001\",\n  \"screeningDate\": \"2026-04-10\",\n  \"enrollmentDate\": \"2026-04-15\",\n  \"informedConsentDate\": \"2026-04-10\",\n  \"consentVersion\": \"v3.1\",\n  \"consentDocumentUrl\": \"https://docs.internal/consent/abc-xy-001-s001.pdf\"\n}"
+            }
+          }
+        },
+        {
+          "name": "7.2 List Enrolled Patients",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base}}/api/v1/studies/{{studyId}}/enrollments?page=1&size=20",
+              "host": ["{{base}}"], "path": ["api","v1","studies","{{studyId}}","enrollments"],
+              "query": [
+                { "key": "status", "value": "", "disabled": true },
+                { "key": "page",   "value": "1" },
+                { "key": "size",   "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "7.3 Withdraw Patient",
+          "request": {
+            "method": "PATCH",
+            "url": { "raw": "{{base}}/api/v1/studies/{{studyId}}/enrollments/{{enrollmentId1}}/withdraw", "host": ["{{base}}"], "path": ["api","v1","studies","{{studyId}}","enrollments","{{enrollmentId1}}","withdraw"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"withdrawalDate\": \"2026-06-01\",\n  \"withdrawalReason\": \"Patient relocated — unable to continue visits\"\n}"
+            }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "8. Patient Visits",
+      "item": [
+        {
+          "name": "8.1 Get Visit Schedule",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base}}/api/v1/studies/{{studyId}}/enrollments/{{enrollmentId1}}/visits", "host": ["{{base}}"], "path": ["api","v1","studies","{{studyId}}","enrollments","{{enrollmentId1}}","visits"] }
+          }
+        },
+        {
+          "name": "8.2 Complete Visit",
+          "request": {
+            "method": "PATCH",
+            "url": { "raw": "{{base}}/api/v1/visits/{{visitId}}/complete", "host": ["{{base}}"], "path": ["api","v1","visits","{{visitId}}","complete"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"actualDate\": \"2026-06-14\",\n  \"checkInTime\": \"2026-06-14T10:00:00Z\",\n  \"checkOutTime\": \"2026-06-14T12:00:00Z\",\n  \"vitalsRecorded\": true,\n  \"adverseEvents\": false,\n  \"labSamplesTaken\": true,\n  \"proceduresDone\": [\"Drug administration\", \"Vitals\", \"ECG\"],\n  \"investigatorNotes\": \"All procedures completed per protocol.\",\n  \"coordinatorNotes\": \"Patient arrived on time.\",\n  \"performedByPiId\": \"{{piId}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "8.3 Mark Visit as Missed",
+          "request": {
+            "method": "PATCH",
+            "url": { "raw": "{{base}}/api/v1/visits/{{visitId}}/missed", "host": ["{{base}}"], "path": ["api","v1","visits","{{visitId}}","missed"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Patient did not attend. Unable to reach by phone.\"\n}"
+            }
+          }
+        },
+        {
+          "name": "8.4 Reschedule Visit",
+          "request": {
+            "method": "PATCH",
+            "url": { "raw": "{{base}}/api/v1/visits/{{visitId}}/reschedule", "host": ["{{base}}"], "path": ["api","v1","visits","{{visitId}}","reschedule"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"newScheduledDate\": \"2026-06-18\",\n  \"reason\": \"Patient requested reschedule due to travel conflict\"\n}"
+            }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "9. Payments",
+      "item": [
+        {
+          "name": "9.1 Create Payment (Calculate & Initiate)",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{base}}/api/v1/studies/{{studyId}}/payments", "host": ["{{base}}"], "path": ["api","v1","studies","{{studyId}}","payments"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"paymentType\": \"STUDY_ACTIVATION\",\n  \"ratePerService\": 1500.00,\n  \"gstPercentage\": 18.00,\n  \"currency\": \"USD\",\n  \"paymentMethod\": \"CREDIT_CARD\",\n  \"dueDate\": \"2026-06-30\",\n  \"notes\": \"Initial activation payment for ABC-XY-001\"\n}"
+            }
+          }
+        },
+        {
+          "name": "9.2 Payment Webhook (Simulate Completion)",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{base}}/api/v1/payments/webhook", "host": ["{{base}}"], "path": ["api","v1","payments","webhook"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"paymentId\": \"{{paymentId}}\",\n  \"status\": \"COMPLETED\",\n  \"paymentGatewayRef\": \"pg_txn_abc123xyz789\",\n  \"transactionId\": \"TXN-20260515-001\"\n}"
+            }
+          }
+        },
+        {
+          "name": "9.3 Get Payment History",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base}}/api/v1/studies/{{studyId}}/payments", "host": ["{{base}}"], "path": ["api","v1","studies","{{studyId}}","payments"] }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "10. Study Access",
+      "item": [
+        {
+          "name": "10.1 Grant Access",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{base}}/api/v1/studies/{{studyId}}/access", "host": ["{{base}}"], "path": ["api","v1","studies","{{studyId}}","access"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"00000010-0000-0000-0000-000000000001\",\n  \"userRole\": \"CRC\",\n  \"accessLevel\": \"READ_WRITE\"\n}"
+            }
+          }
+        },
+        {
+          "name": "10.2 List Study Access",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base}}/api/v1/studies/{{studyId}}/access?active=true",
+              "host": ["{{base}}"], "path": ["api","v1","studies","{{studyId}}","access"],
+              "query": [{ "key": "active", "value": "true" }]
+            }
+          }
+        },
+        {
+          "name": "10.3 Revoke Access",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{base}}/api/v1/studies/{{studyId}}/access/{{accessId}}", "host": ["{{base}}"], "path": ["api","v1","studies","{{studyId}}","access","{{accessId}}"] }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "11. Study Documents",
+      "item": [
+        {
+          "name": "11.1 Upload Document (Metadata)",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{base}}/api/v1/studies/{{studyId}}/documents", "host": ["{{base}}"], "path": ["api","v1","studies","{{studyId}}","documents"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"documentType\": \"PROTOCOL\",\n  \"documentName\": \"Protocol ABC-XY-001 v3.1\",\n  \"version\": \"v3.1\",\n  \"fileUrl\": \"https://docs.internal/studies/s0000001/protocol-v3.1.pdf\",\n  \"fileSizeBytes\": 2456789\n}"
+            }
+          }
+        },
+        {
+          "name": "11.2 List Study Documents",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base}}/api/v1/studies/{{studyId}}/documents?current=true",
+              "host": ["{{base}}"], "path": ["api","v1","studies","{{studyId}}","documents"],
+              "query": [
+                { "key": "type",    "value": "", "disabled": true },
+                { "key": "current", "value": "true" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "12. Audit Log",
+      "item": [
+        {
+          "name": "12.1 Query Audit Trail (Study)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base}}/api/v1/audit?entityType=STUDY&entityId={{studyId}}&page=1&size=20",
+              "host": ["{{base}}"], "path": ["api","v1","audit"],
+              "query": [
+                { "key": "entityType",  "value": "STUDY" },
+                { "key": "entityId",    "value": "{{studyId}}" },
+                { "key": "action",      "value": "", "disabled": true },
+                { "key": "startDate",   "value": "", "disabled": true },
+                { "key": "endDate",     "value": "", "disabled": true },
+                { "key": "performedBy", "value": "", "disabled": true },
+                { "key": "page",        "value": "1" },
+                { "key": "size",        "value": "20" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "H2 Console & Swagger",
+      "item": [
+        {
+          "name": "H2 Console (open in browser)",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base}}/h2-console", "host": ["{{base}}"], "path": ["h2-console"] },
+            "description": "Open in browser. JDBC URL: jdbc:h2:mem:studydb  User: sa  Password: (empty)"
+          }
+        },
+        {
+          "name": "Swagger UI (open in browser)",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base}}/swagger-ui/index.html", "host": ["{{base}}"], "path": ["swagger-ui","index.html"] }
+          }
+        }
+      ]
+    }
+
+  ]
+}

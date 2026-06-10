@@ -1,0 +1,499 @@
+{
+  "info": {
+    "name": "Study Management System",
+    "_postman_id": "study-mgmt-hexagonal-v2",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Complete API collection for the Study Management System (Hexagonal / DDD architecture).\n\nSwagger UI: http://localhost:8080/swagger-ui.html\nH2 Console: http://localhost:8080/h2-console  (JDBC URL: jdbc:h2:mem:studydb)\n\nPre-loaded seed data:\n  - 3 ACTIVE studies (STUDY-2025-001, -002, -003)\n  - 1 DRAFT study (STUDY-2026-001, DB id=4)\n  - Promo codes: FREESTUDY, SAVE20, FLAT1000, TRIAL50, EXPIRED24, MAXED"
+  },
+  "variable": [
+    { "key": "baseUrl",   "value": "http://localhost:8080", "type": "string" },
+    { "key": "studyDbId", "value": "4",                    "type": "string", "description": "DB id of the DRAFT study (STUDY-2026-001)" },
+    { "key": "newStudyId","value": "",                     "type": "string", "description": "Set by the Create Study test script" }
+  ],
+  "item": [
+    {
+      "name": "🏥 Studies",
+      "description": "Core study lifecycle endpoints",
+      "item": [
+        {
+          "name": "GET My Studies (ACTIVE only)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/studies/my-studies", "host": ["{{baseUrl}}"], "path": ["api","studies","my-studies"] }
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('All returned studies are ACTIVE', () => {",
+            "  pm.response.json().forEach(s => pm.expect(s.status).to.eql('ACTIVE'));",
+            "});"
+          ]}}]
+        },
+        {
+          "name": "GET Study by DB id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/studies/{{studyDbId}}", "host": ["{{baseUrl}}"], "path": ["api","studies","{{studyDbId}}"] }
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Has studyId field', () => pm.expect(pm.response.json()).to.have.property('studyId'));"
+          ]}}]
+        },
+        {
+          "name": "POST Create Study",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/api/studies", "host": ["{{baseUrl}}"], "path": ["api","studies"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"studyId\": \"STUDY-NEW-{{$timestamp}}\",\n  \"indication\": \"Hypertension Phase III\",\n  \"numberOfPatients\": 15,\n  \"firstPatientScreeningDate\": \"2026-08-01\",\n  \"lastPatientVisitDate\": \"2027-06-30\",\n  \"totalVisitsPerPatient\": 5\n}"
+            }
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 201', () => pm.response.to.have.status(201));",
+            "const body = pm.response.json();",
+            "pm.test('Status is DRAFT', () => pm.expect(body.status).to.eql('DRAFT'));",
+            "pm.test('5 visit rows auto-generated', () => pm.expect(body.visits.length).to.eql(5));",
+            "pm.test('Visit numbers are 1-5', () => {",
+            "  const nums = body.visits.map(v => v.visitNumber).sort((a,b)=>a-b);",
+            "  pm.expect(nums).to.deep.eql([1,2,3,4,5]);",
+            "});",
+            "pm.collectionVariables.set('newStudyId', body.id);",
+            "pm.test('newStudyId saved to variable', () => pm.expect(body.id).to.be.a('number'));"
+          ]}}]
+        },
+        {
+          "name": "PUT Update Visit Details",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/api/studies/{{newStudyId}}/visits", "host": ["{{baseUrl}}"], "path": ["api","studies","{{newStudyId}}","visits"] },
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  { \"visitNumber\":1, \"visitType\":\"SCREENING\",  \"durationFromLastVisitDays\":0,   \"windowMinusDays\":0, \"windowPlusDays\":3, \"patientInstructions\":\"Fasting required. No food after midnight.\" },\n  { \"visitNumber\":2, \"visitType\":\"TREATMENT\",  \"durationFromLastVisitDays\":14,  \"windowMinusDays\":2, \"windowPlusDays\":2, \"patientInstructions\":\"Administer trial drug 10 mg oral.\" },\n  { \"visitNumber\":3, \"visitType\":\"TREATMENT\",  \"durationFromLastVisitDays\":28,  \"windowMinusDays\":3, \"windowPlusDays\":3, \"patientInstructions\":\"Second dose. CBC + metabolic panel.\" },\n  { \"visitNumber\":4, \"visitType\":\"TREATMENT\",  \"durationFromLastVisitDays\":56,  \"windowMinusDays\":5, \"windowPlusDays\":5, \"patientInstructions\":\"Third dose. Check adverse events.\" },\n  { \"visitNumber\":5, \"visitType\":\"FOLLOW_UP\",  \"durationFromLastVisitDays\":112, \"windowMinusDays\":7, \"windowPlusDays\":7, \"patientInstructions\":\"Final assessment. Patient-reported outcomes form.\" }\n]"
+            }
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "const body = pm.response.json();",
+            "pm.test('Visit 1 is SCREENING', () => pm.expect(body.visits[0].visitType).to.eql('SCREENING'));",
+            "pm.test('Visit 5 is FOLLOW_UP',  () => pm.expect(body.visits[4].visitType).to.eql('FOLLOW_UP'));"
+          ]}}]
+        },
+        {
+          "name": "POST Proceed for Payment — No Promo",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/studies/{{newStudyId}}/proceed-payment", "host": ["{{baseUrl}}"], "path": ["api","studies","{{newStudyId}}","proceed-payment"] }
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "const body = pm.response.json();",
+            "pm.test('Payment SUCCESS',     () => pm.expect(body.paymentStatus).to.eql('SUCCESS'));",
+            "pm.test('No promo applied',    () => pm.expect(body.promoApplied).to.be.false);",
+            "pm.test('Discount is 0',       () => pm.expect(body.discountAmount).to.eql(0));",
+            "pm.test('Has UPI paymentRef',  () => pm.expect(body.paymentReference).to.match(/^UPI_TXN_/));",
+            "const expected = body.baseFee + body.gst;",
+            "pm.test('total = base + GST',  () => pm.expect(body.totalAmount).to.be.closeTo(expected, 0.01));"
+          ]}}]
+        },
+        {
+          "name": "POST Proceed for Payment — FREESTUDY (100% waiver)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/studies/{{studyDbId}}/proceed-payment?promoCode=FREESTUDY",
+              "host": ["{{baseUrl}}"], "path": ["api","studies","{{studyDbId}}","proceed-payment"],
+              "query": [{ "key": "promoCode", "value": "FREESTUDY" }]
+            }
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "const body = pm.response.json();",
+            "pm.test('Total is ₹0',          () => pm.expect(body.totalAmount).to.eql(0));",
+            "pm.test('Discount = gross',      () => pm.expect(body.discountAmount).to.eql(body.baseFee + body.gst));",
+            "pm.test('Promo applied',         () => pm.expect(body.promoApplied).to.be.true);",
+            "pm.test('Ref is PROMO_WAIVED_',  () => pm.expect(body.paymentReference).to.match(/^PROMO_WAIVED_/));",
+            "pm.test('promoCodeUsed=FREESTUDY', () => pm.expect(body.promoCodeUsed).to.eql('FREESTUDY'));"
+          ]}}]
+        },
+        {
+          "name": "POST Proceed for Payment — SAVE20 (20% off)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/studies/1/proceed-payment?promoCode=SAVE20",
+              "host": ["{{baseUrl}}"], "path": ["api","studies","1","proceed-payment"],
+              "query": [{ "key": "promoCode", "value": "SAVE20" }]
+            }
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status is 200 or 409 (already ACTIVE)', () => {",
+            "  pm.expect([200,409]).to.include(pm.response.code);",
+            "});",
+            "if (pm.response.code === 200) {",
+            "  const body = pm.response.json();",
+            "  const gross = body.baseFee + body.gst;",
+            "  const expectedDiscount = gross * 0.20;",
+            "  pm.test('Discount ≈ 20% of gross', () => pm.expect(body.discountAmount).to.be.closeTo(expectedDiscount, 0.01));",
+            "  pm.test('Total ≈ 80% of gross',    () => pm.expect(body.totalAmount).to.be.closeTo(gross * 0.80, 0.01));",
+            "}"
+          ]}}]
+        },
+        {
+          "name": "POST Proceed for Payment — FLAT1000 (₹1000 flat off)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/studies/2/proceed-payment?promoCode=FLAT1000",
+              "host": ["{{baseUrl}}"], "path": ["api","studies","2","proceed-payment"],
+              "query": [{ "key": "promoCode", "value": "FLAT1000" }]
+            }
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status is 200 or 409', () => pm.expect([200,409]).to.include(pm.response.code));",
+            "if (pm.response.code === 200) {",
+            "  const body = pm.response.json();",
+            "  pm.test('Discount is ₹1000', () => pm.expect(body.discountAmount).to.eql(1000));",
+            "}"
+          ]}}]
+        },
+        {
+          "name": "POST Payment Callback — Success (webhook)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/api/studies/{{studyDbId}}/payment-callback", "host": ["{{baseUrl}}"], "path": ["api","studies","{{studyDbId}}","payment-callback"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"paymentReference\": \"UPI_TXN_WEBHOOK_SUCCESS_001\",\n  \"success\": true\n}"
+            }
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status is 200 or 409', () => pm.expect([200,409]).to.include(pm.response.code));"
+          ]}}]
+        },
+        {
+          "name": "POST Payment Callback — Failure (webhook)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/api/studies/{{studyDbId}}/payment-callback", "host": ["{{baseUrl}}"], "path": ["api","studies","{{studyDbId}}","payment-callback"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"paymentReference\": \"UPI_TXN_WEBHOOK_FAIL_001\",\n  \"success\": false\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "🎟️ Promo Codes",
+      "item": [
+        {
+          "name": "GET All Promo Codes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/promo-codes", "host": ["{{baseUrl}}"], "path": ["api","promo-codes"] }
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('At least 6 codes loaded', () => pm.expect(pm.response.json().length).to.be.at.least(6));"
+          ]}}]
+        },
+        {
+          "name": "GET Validate FREESTUDY — valid (FULL)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/promo-codes/validate?code=FREESTUDY", "host": ["{{baseUrl}}"], "path": ["api","promo-codes","validate"], "query": [{ "key": "code", "value": "FREESTUDY" }] }
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Type is FULL', () => pm.expect(pm.response.json().discountType).to.eql('FULL'));"
+          ]}}]
+        },
+        {
+          "name": "GET Validate SAVE20 — valid (PERCENTAGE 20%)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/promo-codes/validate?code=SAVE20", "host": ["{{baseUrl}}"], "path": ["api","promo-codes","validate"], "query": [{ "key": "code", "value": "SAVE20" }] }
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "const body = pm.response.json();",
+            "pm.test('Type is PERCENTAGE',    () => pm.expect(body.discountType).to.eql('PERCENTAGE'));",
+            "pm.test('Discount value is 20',  () => pm.expect(body.discountValue).to.eql(20));"
+          ]}}]
+        },
+        {
+          "name": "GET Validate FLAT1000 — valid (FLAT ₹1000)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/promo-codes/validate?code=FLAT1000", "host": ["{{baseUrl}}"], "path": ["api","promo-codes","validate"], "query": [{ "key": "code", "value": "FLAT1000" }] }
+          }
+        },
+        {
+          "name": "GET Validate EXPIRED24 — 409 Expired",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/promo-codes/validate?code=EXPIRED24", "host": ["{{baseUrl}}"], "path": ["api","promo-codes","validate"], "query": [{ "key": "code", "value": "EXPIRED24" }] }
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 409 Conflict', () => pm.response.to.have.status(409));",
+            "pm.test('Error mentions expired', () => pm.expect(pm.response.json().error).to.include('expired'));"
+          ]}}]
+        },
+        {
+          "name": "GET Validate MAXED — 409 Usage Limit",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/promo-codes/validate?code=MAXED", "host": ["{{baseUrl}}"], "path": ["api","promo-codes","validate"], "query": [{ "key": "code", "value": "MAXED" }] }
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 409 Conflict', () => pm.response.to.have.status(409));",
+            "pm.test('Error mentions limit', () => pm.expect(pm.response.json().error).to.include('limit'));"
+          ]}}]
+        },
+        {
+          "name": "GET Validate XYZABC — 400 Not Found",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/promo-codes/validate?code=XYZABC", "host": ["{{baseUrl}}"], "path": ["api","promo-codes","validate"], "query": [{ "key": "code", "value": "XYZABC" }] }
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 400 Bad Request', () => pm.response.to.have.status(400));",
+            "pm.test('Error mentions not recognised', () => pm.expect(pm.response.json().error).to.include('not recognised'));"
+          ]}}]
+        }
+      ]
+    },
+    {
+      "name": "🔄 E2E Scenarios",
+      "description": "Complete flows — run each folder top-to-bottom",
+      "item": [
+        {
+          "name": "Scenario 1: Full Flow — No Promo",
+          "description": "Create → fill visits → pay (no promo) → verify ACTIVE",
+          "item": [
+            {
+              "name": "1a. Create Study",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "url": { "raw": "{{baseUrl}}/api/studies", "host": ["{{baseUrl}}"], "path": ["api","studies"] },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"studyId\": \"E2E-NOPROMO-001\",\n  \"indication\": \"Asthma\",\n  \"numberOfPatients\": 4,\n  \"totalVisitsPerPatient\": 3\n}"
+                }
+              },
+              "event": [{ "listen": "test", "script": { "exec": [
+                "const s = pm.response.json();",
+                "pm.collectionVariables.set('e2eStudyId', s.id);",
+                "pm.test('DRAFT + 3 visits', () => { pm.expect(s.status).eql('DRAFT'); pm.expect(s.visits.length).eql(3); });"
+              ]}}]
+            },
+            {
+              "name": "1b. Fill Visit Details",
+              "request": {
+                "method": "PUT",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "url": { "raw": "{{baseUrl}}/api/studies/{{e2eStudyId}}/visits", "host": ["{{baseUrl}}"], "path": ["api","studies","{{e2eStudyId}}","visits"] },
+                "body": {
+                  "mode": "raw",
+                  "raw": "[\n  { \"visitNumber\":1, \"visitType\":\"SCREENING\", \"durationFromLastVisitDays\":0,  \"windowMinusDays\":0, \"windowPlusDays\":3, \"patientInstructions\":\"Spirometry + allergy panel\" },\n  { \"visitNumber\":2, \"visitType\":\"TREATMENT\", \"durationFromLastVisitDays\":14, \"windowMinusDays\":2, \"windowPlusDays\":2, \"patientInstructions\":\"Inhaler training + peak flow diary\" },\n  { \"visitNumber\":3, \"visitType\":\"FOLLOW_UP\", \"durationFromLastVisitDays\":42, \"windowMinusDays\":5, \"windowPlusDays\":5, \"patientInstructions\":\"Final spirometry + QoL questionnaire\" }\n]"
+                }
+              }
+            },
+            {
+              "name": "1c. Proceed for Payment (no promo)",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": { "raw": "{{baseUrl}}/api/studies/{{e2eStudyId}}/proceed-payment", "host": ["{{baseUrl}}"], "path": ["api","studies","{{e2eStudyId}}","proceed-payment"] }
+              },
+              "event": [{ "listen": "test", "script": { "exec": [
+                "const body = pm.response.json();",
+                "pm.test('Total = 4×3×500×1.18 = ₹7080', () => pm.expect(body.totalAmount).to.be.closeTo(7080, 0.01));",
+                "pm.test('UPI ref generated',  () => pm.expect(body.paymentReference).to.match(/^UPI_TXN_/));",
+                "pm.test('Study now ACTIVE',   () => pm.expect(body.paymentStatus).to.eql('SUCCESS'));"
+              ]}}]
+            },
+            {
+              "name": "1d. Verify in My Studies",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": { "raw": "{{baseUrl}}/api/studies/my-studies", "host": ["{{baseUrl}}"], "path": ["api","studies","my-studies"] }
+              },
+              "event": [{ "listen": "test", "script": { "exec": [
+                "const ids = pm.response.json().map(s => s.studyId);",
+                "pm.test('E2E-NOPROMO-001 is ACTIVE', () => pm.expect(ids).to.include('E2E-NOPROMO-001'));"
+              ]}}]
+            }
+          ]
+        },
+        {
+          "name": "Scenario 2: Full Flow — FREESTUDY (100% waiver)",
+          "description": "Create → fill visits → apply FREESTUDY → activates WITHOUT hitting payment gateway",
+          "item": [
+            {
+              "name": "2a. Create Study",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "url": { "raw": "{{baseUrl}}/api/studies", "host": ["{{baseUrl}}"], "path": ["api","studies"] },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"studyId\": \"E2E-FREESTUDY-001\",\n  \"indication\": \"Migraine\",\n  \"numberOfPatients\": 6,\n  \"totalVisitsPerPatient\": 4\n}"
+                }
+              },
+              "event": [{ "listen": "test", "script": { "exec": [
+                "pm.collectionVariables.set('e2eFreeStudyId', pm.response.json().id);"
+              ]}}]
+            },
+            {
+              "name": "2b. Pre-validate FREESTUDY promo",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": { "raw": "{{baseUrl}}/api/promo-codes/validate?code=FREESTUDY", "host": ["{{baseUrl}}"], "path": ["api","promo-codes","validate"], "query": [{ "key": "code", "value": "FREESTUDY" }] }
+              },
+              "event": [{ "listen": "test", "script": { "exec": [
+                "pm.test('FREESTUDY is valid', () => pm.response.to.have.status(200));"
+              ]}}]
+            },
+            {
+              "name": "2c. Proceed with FREESTUDY (no payment gateway call)",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/studies/{{e2eFreeStudyId}}/proceed-payment?promoCode=FREESTUDY",
+                  "host": ["{{baseUrl}}"], "path": ["api","studies","{{e2eFreeStudyId}}","proceed-payment"],
+                  "query": [{ "key": "promoCode", "value": "FREESTUDY" }]
+                }
+              },
+              "event": [{ "listen": "test", "script": { "exec": [
+                "const body = pm.response.json();",
+                "pm.test('Total is ₹0',                () => pm.expect(body.totalAmount).to.eql(0));",
+                "pm.test('Ref is PROMO_WAIVED_FREESTUDY', () => pm.expect(body.paymentReference).to.eql('PROMO_WAIVED_FREESTUDY'));",
+                "pm.test('promoApplied is true',        () => pm.expect(body.promoApplied).to.be.true);"
+              ]}}]
+            }
+          ]
+        },
+        {
+          "name": "Scenario 3: Full Flow — TRIAL50 (50% off)",
+          "description": "Create → apply TRIAL50 → pay discounted amount via UPI",
+          "item": [
+            {
+              "name": "3a. Create Study",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "url": { "raw": "{{baseUrl}}/api/studies", "host": ["{{baseUrl}}"], "path": ["api","studies"] },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"studyId\": \"E2E-TRIAL50-001\",\n  \"indication\": \"COPD\",\n  \"numberOfPatients\": 10,\n  \"totalVisitsPerPatient\": 4\n}"
+                }
+              },
+              "event": [{ "listen": "test", "script": { "exec": [
+                "pm.collectionVariables.set('e2eTrial50Id', pm.response.json().id);"
+              ]}}]
+            },
+            {
+              "name": "3b. Proceed with TRIAL50 (50% off)",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/studies/{{e2eTrial50Id}}/proceed-payment?promoCode=TRIAL50",
+                  "host": ["{{baseUrl}}"], "path": ["api","studies","{{e2eTrial50Id}}","proceed-payment"],
+                  "query": [{ "key": "promoCode", "value": "TRIAL50" }]
+                }
+              },
+              "event": [{ "listen": "test", "script": { "exec": [
+                "const body = pm.response.json();",
+                "const gross = body.baseFee + body.gst;",
+                "pm.test('Discount is 50% of gross', () => pm.expect(body.discountAmount).to.be.closeTo(gross * 0.5, 0.01));",
+                "pm.test('Total is 50% of gross',    () => pm.expect(body.totalAmount).to.be.closeTo(gross * 0.5, 0.01));",
+                "pm.test('UPI ref generated',         () => pm.expect(body.paymentReference).to.match(/^UPI_TXN_/));",
+                "console.log('baseFee=', body.baseFee, 'gst=', body.gst, 'discount=', body.discountAmount, 'total=', body.totalAmount);"
+              ]}}]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "❌ Error Cases",
+      "description": "Verify 400 / 409 responses for invalid inputs",
+      "item": [
+        {
+          "name": "POST Create Study — Duplicate studyId → 400",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/api/studies", "host": ["{{baseUrl}}"], "path": ["api","studies"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"studyId\": \"STUDY-2025-001\",\n  \"indication\": \"Duplicate\",\n  \"numberOfPatients\": 1,\n  \"totalVisitsPerPatient\": 1\n}"
+            }
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 400', () => pm.response.to.have.status(400));",
+            "pm.test('Error mentions already exists', () => pm.expect(pm.response.json().error).to.include('already exists'));"
+          ]}}]
+        },
+        {
+          "name": "POST Payment — Non-DRAFT study → 409",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/studies/1/proceed-payment", "host": ["{{baseUrl}}"], "path": ["api","studies","1","proceed-payment"] }
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 409', () => pm.response.to.have.status(409));",
+            "pm.test('Error mentions DRAFT', () => pm.expect(pm.response.json().error).to.include('DRAFT'));"
+          ]}}]
+        },
+        {
+          "name": "GET Validate unknown promo → 400",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/promo-codes/validate?code=INVALID999", "host": ["{{baseUrl}}"], "path": ["api","promo-codes","validate"], "query": [{ "key": "code", "value": "INVALID999" }] }
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 400', () => pm.response.to.have.status(400));"
+          ]}}]
+        },
+        {
+          "name": "GET Study not found → 400",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/studies/999999", "host": ["{{baseUrl}}"], "path": ["api","studies","999999"] }
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 400', () => pm.response.to.have.status(400));"
+          ]}}]
+        }
+      ]
+    }
+  ]
+}

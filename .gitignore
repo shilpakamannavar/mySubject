@@ -1,0 +1,108 @@
+# ============================================================
+# Maven
+# ============================================================
+target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+.flattened-pom.xml
+
+# ============================================================
+# Spring Boot
+# ============================================================
+spring-shell.log
+*.original
+
+# ============================================================
+# H2 Database
+# ============================================================
+*.db
+*.mv.db
+*.trace.db
+
+# ============================================================
+# Logs
+# ============================================================
+*.log
+logs/
+log/
+
+# ============================================================
+# Secrets & Environment
+# ============================================================
+.env
+.env.*
+!.env.example
+application-local.properties
+application-local.yml
+application-secret.properties
+application-secret.yml
+**/src/main/resources/keystore.*
+**/src/main/resources/*.p12
+**/src/main/resources/*.jks
+
+# ============================================================
+# IntelliJ IDEA
+# ============================================================
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/usage.statistics.xml
+.idea/dictionaries/
+.idea/shelf/
+.idea/aws.xml
+.idea/dataSources/
+.idea/dataSources.local.xml
+.idea/sqlDataSources.xml
+.idea/dynamic.xml
+.idea/uiDesigner.xml
+*.iml
+*.iws
+*.ipr
+
+# ============================================================
+# Eclipse
+# ============================================================
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings/
+.springBeans
+.sts4-cache
+
+# ============================================================
+# NetBeans
+# ============================================================
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+build/
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+# ============================================================
+# VS Code
+# ============================================================
+.vscode/
+
+# ============================================================
+# Claude Code
+# ============================================================
+.claude/settings.local.json
+
+# ============================================================
+# macOS
+# ============================================================
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# ============================================================
+# Windows
+# ============================================================
+Thumbs.db
+ehthumbs.db
+Desktop.ini

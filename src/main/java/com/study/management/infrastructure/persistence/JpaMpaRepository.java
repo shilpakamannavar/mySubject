@@ -1,0 +1,14 @@
+package com.study.management.infrastructure.persistence;
+
+import com.study.management.domain.model.Mpa;
+import com.study.management.domain.model.MpaStatus;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+interface JpaMpaRepository extends JpaRepository<Mpa, UUID> {
+    List<Mpa> findByStatus(MpaStatus status);
+    Optional<Mpa> findByMpaNumber(String mpaNumber);
+}
