@@ -17,6 +17,7 @@ public class StudyPlanPersistenceAdapter implements StudyPlanPort {
     }
 
     @Override public void deleteByStudy(StudyEntity study)          { jpa.deleteByStudy(study); }
+    @Override public void flush()                                    { jpa.flush(); }
     @Override public StudyPlanVisit save(StudyPlanVisit v)          { return jpa.save(v); }
     @Override public List<StudyPlanVisit> findByStudyOrdered(StudyEntity study) {
         return jpa.findByStudyOrderByVisitNumber(study);

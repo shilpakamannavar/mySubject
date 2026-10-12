@@ -26,4 +26,6 @@ public interface StudyPort {
     Study save(Study study);
 
     boolean existsByStudyId(String studyId);
+
+    List<Study> findByCreatedByPhone(String phone);
 }

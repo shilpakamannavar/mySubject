@@ -19,6 +19,9 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -57,11 +60,14 @@ public class StudyController {
         @ApiResponse(responseCode = "400", description = "Duplicate studyId or validation error",
                      content = @Content(schema = @Schema(example = "{\"error\":\"Study ID already exists\"}")))
     })
+    @PreAuthorize("hasAnyRole('ADMIN', 'CRC', 'CO_INVESTIGATOR', 'PRIMARY_INVESTIGATOR')")
     @PostMapping
     public ResponseEntity<Study> createStudy(
             @Valid @RequestBody Study study,
             @Parameter(description = "Optional customer ID to associate the study with a customer")
-            @RequestParam(required = false) Long customerId) {
+            @RequestParam(required = false) Long customerId,
+            @AuthenticationPrincipal Jwt jwt) {
+        study.setCreatedByPhone(jwt.getClaimAsString("phone_number"));
         return ResponseEntity.status(HttpStatus.CREATED).body(studyUseCase.createStudy(study, customerId));
     }
 
@@ -72,6 +78,7 @@ public class StudyController {
         description = "User fills editable columns of the auto-generated visit table. " +
                       "visitNumber is locked — only type, duration, window, and instructions can be changed."
     )
+    @PreAuthorize("hasAnyRole('ADMIN', 'CRC', 'CO_INVESTIGATOR')")
     @PutMapping("/{id}/visits")
     public ResponseEntity<Study> updateVisits(
             @PathVariable Long id,
@@ -96,6 +103,7 @@ public class StudyController {
         @ApiResponse(responseCode = "409", description = "Study not in DRAFT / promo expired or maxed-out",
                      content = @Content(schema = @Schema(example = "{\"error\":\"Promo code 'EXPIRED24' expired on 2024-12-31.\"}")))
     })
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/{id}/proceed-payment")
     public ResponseEntity<InvoiceResponse> proceedForPayment(
             @PathVariable Long id,
@@ -113,6 +121,7 @@ public class StudyController {
         summary     = "Payment callback (UPI webhook)",
         description = "Called asynchronously by the payment provider with the final outcome."
     )
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/{id}/payment-callback")
     public ResponseEntity<String> paymentCallback(
             @PathVariable Long id,
@@ -131,11 +140,13 @@ public class StudyController {
 
     @Operation(
         summary     = "My Studies dashboard",
-        description = "Returns only ACTIVE studies. Equivalent to: SELECT * FROM study WHERE status = 'ACTIVE'."
+        description = "Returns all studies created by the authenticated primary investigator."
     )
+    @PreAuthorize("hasAnyRole('ADMIN', 'PRIMARY_INVESTIGATOR')")
     @GetMapping("/my-studies")
-    public ResponseEntity<List<Study>> getMyStudies() {
-        return ResponseEntity.ok(studyUseCase.getActiveStudies());
+    public ResponseEntity<List<Study>> getMyStudies(@AuthenticationPrincipal Jwt jwt) {
+        String phone = jwt.getClaimAsString("phone_number");
+        return ResponseEntity.ok(studyUseCase.getStudiesByPiPhone(phone));
     }
 
     @Operation(summary = "Get study by internal DB id")
@@ -157,12 +168,14 @@ public class StudyController {
     }
 
     @Operation(summary = "Activate study (payment must be complete)")
+    @PreAuthorize("hasRole('ADMIN')")
     @PatchMapping("/{id}/activate")
     public ResponseEntity<Study> activate(@PathVariable Long id) {
         return ResponseEntity.ok(studyUseCase.activateStudy(id));
     }
 
     @Operation(summary = "Disable study and revoke access")
+    @PreAuthorize("hasRole('ADMIN')")
     @PatchMapping("/{id}/disable")
     public ResponseEntity<Study> disable(@PathVariable Long id) {
         return ResponseEntity.ok(studyUseCase.disableStudy(id));

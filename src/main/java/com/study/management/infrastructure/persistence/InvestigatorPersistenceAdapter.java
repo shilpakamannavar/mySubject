@@ -25,7 +25,10 @@ public class InvestigatorPersistenceAdapter implements InvestigatorPort {
 
     @Override public PrimaryInvestigator save(PrimaryInvestigator pi)       { return piJpa.save(pi); }
     @Override public Optional<PrimaryInvestigator> findById(UUID piId)      { return piJpa.findById(piId); }
-    @Override public boolean existsByEmail(String email)                    { return piJpa.existsByEmail(email); }
+    @Override public List<PrimaryInvestigator> findAll()                    { return piJpa.findAll(); }
+    @Override public Optional<PrimaryInvestigator> findByPhone(String p)        { return piJpa.findByPhone(p); }
+    @Override public Optional<PrimaryInvestigator> findByEmail(String email)   { return piJpa.findByEmailIgnoreCase(email); }
+    @Override public boolean existsByEmail(String email)                        { return piJpa.existsByEmail(email); }
     @Override public PiCenterAssignment saveAssignment(PiCenterAssignment a) { return assignJpa.save(a); }
     @Override public List<PiCenterAssignment> findAssignmentsByPi(PrimaryInvestigator pi) {
         return assignJpa.findByPrimaryInvestigator(pi);

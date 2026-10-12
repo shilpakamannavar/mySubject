@@ -13,8 +13,10 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -31,6 +33,22 @@ public class PromoCodeController {
                                PromoCodeAssignmentUseCase assignmentUseCase) {
         this.promoCodeUseCase = promoCodeUseCase;
         this.assignmentUseCase = assignmentUseCase;
+    }
+
+    @Operation(
+        summary     = "Create a promo code (Admin only)",
+        description = "Creates a new promo code with a discount type of FULL, PERCENTAGE, or FLAT. " +
+                      "After creation, assign it to a specific customer (PI / MPA) via POST /{code}/assign, " +
+                      "or omit customerId to make it available to all customers."
+    )
+    @ApiResponses({
+        @ApiResponse(responseCode = "201", description = "Promo code created"),
+        @ApiResponse(responseCode = "409", description = "Code already exists")
+    })
+    @PreAuthorize("hasRole('ADMIN')")
+    @PostMapping
+    public ResponseEntity<PromoCode> create(@Valid @RequestBody PromoCode promoCode) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(promoCodeUseCase.create(promoCode));
     }
 
     @Operation(
@@ -53,6 +71,7 @@ public class PromoCodeController {
     }
 
     @Operation(summary = "List all promo codes", description = "Admin / back-office endpoint.")
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping
     public ResponseEntity<List<PromoCode>> listAll() {
         return ResponseEntity.ok(promoCodeUseCase.getAll());
@@ -71,6 +90,7 @@ public class PromoCodeController {
         @ApiResponse(responseCode = "400", description = "Promo code or customer not found"),
         @ApiResponse(responseCode = "409", description = "Assignment already exists")
     })
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/{code}/assign")
     public ResponseEntity<PromoCodeAssignment> assign(
             @PathVariable String code,
@@ -87,6 +107,7 @@ public class PromoCodeController {
         summary     = "List all assignments for a promo code",
         description = "Shows which customers (or ALL) this code has been provisioned to."
     )
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/{code}/assignments")
     public ResponseEntity<List<PromoCodeAssignment>> getAssignments(@PathVariable String code) {
         return ResponseEntity.ok(assignmentUseCase.getAssignments(code));
@@ -95,18 +116,21 @@ public class PromoCodeController {
     // ── Usage tracking ────────────────────────────────────────────────
 
     @Operation(summary = "Usage log for a specific promo code")
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/{code}/usage")
     public ResponseEntity<List<PromoCodeUsageLog>> getUsageByCode(@PathVariable String code) {
         return ResponseEntity.ok(assignmentUseCase.getUsageByPromoCode(code));
     }
 
     @Operation(summary = "Full usage log — all promo codes, all customers")
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/usage")
     public ResponseEntity<List<PromoCodeUsageLog>> getAllUsage() {
         return ResponseEntity.ok(assignmentUseCase.getAllUsage());
     }
 
     @Operation(summary = "Usage log for a specific customer")
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/usage/customer/{customerId}")
     public ResponseEntity<List<PromoCodeUsageLog>> getUsageByCustomer(@PathVariable Long customerId) {
         return ResponseEntity.ok(assignmentUseCase.getUsageByCustomer(customerId));

@@ -16,5 +16,7 @@ public interface PromoCodeUseCase {
      */
     PromoCode validate(String code);
 
+    PromoCode create(PromoCode promoCode);
+
     List<PromoCode> getAll();
 }

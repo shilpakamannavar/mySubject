@@ -5,6 +5,12 @@ import java.util.UUID;
 
 public class EnrollPatientRequest {
 
+    /**
+     * Send either subjectId (preferred — backend resolves/creates the patient record automatically)
+     * or patientId (legacy, when the patient record was created separately).
+     * If both are supplied, subjectId takes precedence.
+     */
+    private UUID subjectId;
     private UUID patientId;
     private UUID studySiteId;
     private String subjectNumber;
@@ -13,6 +19,9 @@ public class EnrollPatientRequest {
     private LocalDate informedConsentDate;
     private String consentVersion;
     private String consentDocumentUrl;
+
+    public UUID getSubjectId()                       { return subjectId; }
+    public void setSubjectId(UUID v)               { this.subjectId = v; }
 
     public UUID getPatientId()                      { return patientId; }
     public void setPatientId(UUID v)               { this.patientId = v; }

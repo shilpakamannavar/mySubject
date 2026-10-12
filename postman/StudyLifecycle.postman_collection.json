@@ -1,0 +1,1459 @@
+{
+  "info": {
+    "name": "Study Management — Full Lifecycle (with Auth)",
+    "description": "Two-service setup:\n  • Auth Service  → http://localhost:8090  (AWS Cognito wrapper)\n  • Study Service → http://localhost:8080  (Spring Boot app)\n\nPhase 0 handles all auth scenarios for every role (admin, primary_investigator, co_investigator, crc, subject, cro, hospital).\nSign-in auto-captures the idToken into the `token` variable — all subsequent study requests use it automatically.\n\nBefore running:\n  1. Start both services\n  2. Run PHASE 0 first — Sign In sets the `token` automatically\n  3. Run Steps 1–24 in order via Postman Runner",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base",          "value": "http://localhost:8080",  "type": "string" },
+    { "key": "authBase",      "value": "http://localhost:8090",  "type": "string" },
+    { "key": "token",         "value": "", "type": "string" },
+    { "key": "accessToken",   "value": "", "type": "string" },
+    { "key": "refreshToken",  "value": "", "type": "string" },
+    { "key": "mpaId",         "value": "", "type": "string" },
+    { "key": "centerId",      "value": "", "type": "string" },
+    { "key": "piId",          "value": "", "type": "string" },
+    { "key": "assignmentId",  "value": "", "type": "string" },
+    { "key": "studyId",       "value": "", "type": "string" },
+    { "key": "studySiteId",   "value": "", "type": "string" },
+    { "key": "paymentId",     "value": "", "type": "string" },
+    { "key": "accessId",      "value": "", "type": "string" },
+    { "key": "patientId",     "value": "", "type": "string" },
+    { "key": "enrollmentId",  "value": "", "type": "string" },
+    { "key": "visitId",       "value": "", "type": "string" },
+    { "key": "logId",         "value": "", "type": "string" }
+  ],
+  "item": [
+
+    {
+      "name": "PHASE 0 — Authentication (port 8090)",
+      "item": [
+
+        {
+          "name": "AUTH 01 — Check Username / User Exists",
+          "item": [
+            {
+              "name": "Check Username Type (email or phone)",
+              "event": [{ "listen": "test", "script": { "exec": ["pm.test('200 OK', () => pm.response.to.have.status(200));"], "type": "text/javascript" } }],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{authBase}}/api/auth/username-type?username=admin@study.com",
+                  "host": ["{{authBase}}"], "path": ["api","auth","username-type"],
+                  "query": [{ "key": "username", "value": "admin@study.com" }]
+                }
+              }
+            },
+            {
+              "name": "Check User Exists",
+              "event": [{ "listen": "test", "script": { "exec": ["pm.test('200 OK', () => pm.response.to.have.status(200));"], "type": "text/javascript" } }],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{authBase}}/api/auth/check-user?username=admin@study.com",
+                  "host": ["{{authBase}}"], "path": ["api","auth","check-user"],
+                  "query": [{ "key": "username", "value": "admin@study.com" }]
+                }
+              }
+            }
+          ]
+        },
+
+        {
+          "name": "AUTH 02 — Sign Up (all roles)",
+          "item": [
+            {
+              "name": "Sign Up — ADMIN",
+              "event": [{ "listen": "test", "script": { "exec": ["pm.test('Admin signed up', () => pm.response.to.have.status(200));", "console.log(pm.response.json());"], "type": "text/javascript" } }],
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "url": { "raw": "{{authBase}}/api/auth/signup", "host": ["{{authBase}}"], "path": ["api","auth","signup"] },
+                "body": { "mode": "raw", "raw": "{\n  \"username\": \"admin@study.com\",\n  \"password\": \"123456\",\n  \"email\": \"admin@study.com\",\n  \"phoneNumber\": \"+919000000001\",\n  \"firstName\": \"System\",\n  \"lastName\": \"Admin\",\n  \"role\": \"admin\"\n}" }
+              }
+            },
+            {
+              "name": "Sign Up — PRIMARY_INVESTIGATOR",
+              "event": [{ "listen": "test", "script": { "exec": ["pm.test('PI signed up', () => pm.response.to.have.status(200));"], "type": "text/javascript" } }],
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "url": { "raw": "{{authBase}}/api/auth/signup", "host": ["{{authBase}}"], "path": ["api","auth","signup"] },
+                "body": { "mode": "raw", "raw": "{\n  \"username\": \"pi@study.com\",\n  \"password\": \"123456\",\n  \"email\": \"pi@study.com\",\n  \"phoneNumber\": \"+919000000002\",\n  \"firstName\": \"Rajesh\",\n  \"lastName\": \"Kumar\",\n  \"role\": \"primary_investigator\"\n}" }
+              }
+            },
+            {
+              "name": "Sign Up — CO_INVESTIGATOR",
+              "event": [{ "listen": "test", "script": { "exec": ["pm.test('Co-Investigator signed up', () => pm.response.to.have.status(200));"], "type": "text/javascript" } }],
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "url": { "raw": "{{authBase}}/api/auth/signup", "host": ["{{authBase}}"], "path": ["api","auth","signup"] },
+                "body": { "mode": "raw", "raw": "{\n  \"username\": \"coinvestigator@study.com\",\n  \"password\": \"123456\",\n  \"email\": \"coinvestigator@study.com\",\n  \"phoneNumber\": \"+919000000003\",\n  \"firstName\": \"Priya\",\n  \"lastName\": \"Mehta\",\n  \"role\": \"co_investigator\"\n}" }
+              }
+            },
+            {
+              "name": "Sign Up — CRC",
+              "event": [{ "listen": "test", "script": { "exec": ["pm.test('CRC signed up', () => pm.response.to.have.status(200));"], "type": "text/javascript" } }],
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "url": { "raw": "{{authBase}}/api/auth/signup", "host": ["{{authBase}}"], "path": ["api","auth","signup"] },
+                "body": { "mode": "raw", "raw": "{\n  \"username\": \"crc@study.com\",\n  \"password\": \"123456\",\n  \"email\": \"crc@study.com\",\n  \"phoneNumber\": \"+919000000004\",\n  \"firstName\": \"Neha\",\n  \"lastName\": \"Joshi\",\n  \"role\": \"crc\"\n}" }
+              }
+            },
+            {
+              "name": "Sign Up — SUBJECT (Patient)",
+              "event": [{ "listen": "test", "script": { "exec": ["pm.test('Subject signed up', () => pm.response.to.have.status(200));"], "type": "text/javascript" } }],
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "url": { "raw": "{{authBase}}/api/auth/signup", "host": ["{{authBase}}"], "path": ["api","auth","signup"] },
+                "body": { "mode": "raw", "raw": "{\n  \"username\": \"subject@study.com\",\n  \"password\": \"123456\",\n  \"email\": \"subject@study.com\",\n  \"phoneNumber\": \"+919000000005\",\n  \"firstName\": \"Anita\",\n  \"lastName\": \"Sharma\",\n  \"role\": \"subject\"\n}" }
+              }
+            },
+            {
+              "name": "Sign Up — CRO",
+              "event": [{ "listen": "test", "script": { "exec": ["pm.test('CRO signed up', () => pm.response.to.have.status(200));"], "type": "text/javascript" } }],
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "url": { "raw": "{{authBase}}/api/auth/signup", "host": ["{{authBase}}"], "path": ["api","auth","signup"] },
+                "body": { "mode": "raw", "raw": "{\n  \"username\": \"cro@study.com\",\n  \"password\": \"123456\",\n  \"email\": \"cro@study.com\",\n  \"phoneNumber\": \"+919000000006\",\n  \"firstName\": \"Vikram\",\n  \"lastName\": \"Singh\",\n  \"role\": \"cro\"\n}" }
+              }
+            },
+            {
+              "name": "Sign Up — HOSPITAL",
+              "event": [{ "listen": "test", "script": { "exec": ["pm.test('Hospital signed up', () => pm.response.to.have.status(200));"], "type": "text/javascript" } }],
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "url": { "raw": "{{authBase}}/api/auth/signup", "host": ["{{authBase}}"], "path": ["api","auth","signup"] },
+                "body": { "mode": "raw", "raw": "{\n  \"username\": \"hospital@study.com\",\n  \"password\": \"123456\",\n  \"email\": \"hospital@study.com\",\n  \"phoneNumber\": \"+919000000007\",\n  \"firstName\": \"Apollo\",\n  \"lastName\": \"Hospital\",\n  \"role\": \"hospital\"\n}" }
+              }
+            }
+          ]
+        },
+
+        {
+          "name": "AUTH 03 — Confirm Sign Up",
+          "item": [
+            {
+              "name": "Confirm Sign Up",
+              "event": [{ "listen": "test", "script": { "exec": ["pm.test('Confirmed', () => pm.response.to.have.status(200));"], "type": "text/javascript" } }],
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "url": { "raw": "{{authBase}}/api/auth/confirm-signup", "host": ["{{authBase}}"], "path": ["api","auth","confirm-signup"] },
+                "body": { "mode": "raw", "raw": "{\n  \"username\": \"admin@study.com\",\n  \"confirmationCode\": \"123456\"\n}" },
+                "description": "Replace username and confirmationCode with the actual values received via email/SMS after sign-up."
+              }
+            },
+            {
+              "name": "Resend Confirmation Code",
+              "event": [{ "listen": "test", "script": { "exec": ["pm.test('Code resent', () => pm.response.to.have.status(200));"], "type": "text/javascript" } }],
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "url": { "raw": "{{authBase}}/api/auth/resend-code", "host": ["{{authBase}}"], "path": ["api","auth","resend-code"] },
+                "body": { "mode": "raw", "raw": "{\n  \"username\": \"admin@study.com\"\n}" }
+              }
+            }
+          ]
+        },
+
+        {
+          "name": "AUTH 04 — Sign In (all roles)",
+          "description": "Each Sign In request auto-captures idToken into the `token` variable and accessToken into `accessToken`. All study management requests use `token` automatically.",
+          "item": [
+            {
+              "name": "Sign In — ADMIN  ✦ sets token",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Admin signed in', () => pm.response.to.have.status(200));",
+                      "var json = pm.response.json();",
+                      "pm.collectionVariables.set('token', json.idToken);",
+                      "pm.collectionVariables.set('accessToken', json.accessToken);",
+                      "pm.collectionVariables.set('refreshToken', json.refreshToken);",
+                      "console.log('Signed in as ADMIN. idToken set as token.');"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "url": { "raw": "{{authBase}}/api/auth/signin", "host": ["{{authBase}}"], "path": ["api","auth","signin"] },
+                "body": { "mode": "raw", "raw": "{\n  \"username\": \"admin@study.com\",\n  \"password\": \"123456\",\n  \"role\": \"admin\"\n}" }
+              }
+            },
+            {
+              "name": "Sign In — PRIMARY_INVESTIGATOR  ✦ sets token",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('PI signed in', () => pm.response.to.have.status(200));",
+                      "var json = pm.response.json();",
+                      "pm.collectionVariables.set('token', json.idToken);",
+                      "pm.collectionVariables.set('accessToken', json.accessToken);",
+                      "pm.collectionVariables.set('refreshToken', json.refreshToken);",
+                      "console.log('Signed in as PRIMARY_INVESTIGATOR. idToken set as token.');"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "url": { "raw": "{{authBase}}/api/auth/signin", "host": ["{{authBase}}"], "path": ["api","auth","signin"] },
+                "body": { "mode": "raw", "raw": "{\n  \"username\": \"pi@study.com\",\n  \"password\": \"123456\",\n  \"role\": \"primary_investigator\"\n}" }
+              }
+            },
+            {
+              "name": "Sign In — CO_INVESTIGATOR  ✦ sets token",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Co-Investigator signed in', () => pm.response.to.have.status(200));",
+                      "var json = pm.response.json();",
+                      "pm.collectionVariables.set('token', json.idToken);",
+                      "pm.collectionVariables.set('accessToken', json.accessToken);",
+                      "pm.collectionVariables.set('refreshToken', json.refreshToken);",
+                      "console.log('Signed in as CO_INVESTIGATOR. idToken set as token.');"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "url": { "raw": "{{authBase}}/api/auth/signin", "host": ["{{authBase}}"], "path": ["api","auth","signin"] },
+                "body": { "mode": "raw", "raw": "{\n  \"username\": \"coinvestigator@study.com\",\n  \"password\": \"123456\",\n  \"role\": \"co_investigator\"\n}" }
+              }
+            },
+            {
+              "name": "Sign In — CRC  ✦ sets token",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('CRC signed in', () => pm.response.to.have.status(200));",
+                      "var json = pm.response.json();",
+                      "pm.collectionVariables.set('token', json.idToken);",
+                      "pm.collectionVariables.set('accessToken', json.accessToken);",
+                      "pm.collectionVariables.set('refreshToken', json.refreshToken);",
+                      "console.log('Signed in as CRC. idToken set as token.');"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "url": { "raw": "{{authBase}}/api/auth/signin", "host": ["{{authBase}}"], "path": ["api","auth","signin"] },
+                "body": { "mode": "raw", "raw": "{\n  \"username\": \"crc@study.com\",\n  \"password\": \"123456\",\n  \"role\": \"crc\"\n}" }
+              }
+            },
+            {
+              "name": "Sign In — SUBJECT  ✦ sets token",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Subject signed in', () => pm.response.to.have.status(200));",
+                      "var json = pm.response.json();",
+                      "pm.collectionVariables.set('token', json.idToken);",
+                      "pm.collectionVariables.set('accessToken', json.accessToken);",
+                      "pm.collectionVariables.set('refreshToken', json.refreshToken);",
+                      "console.log('Signed in as SUBJECT. idToken set as token.');"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "url": { "raw": "{{authBase}}/api/auth/signin", "host": ["{{authBase}}"], "path": ["api","auth","signin"] },
+                "body": { "mode": "raw", "raw": "{\n  \"username\": \"subject@study.com\",\n  \"password\": \"123456\",\n  \"role\": \"subject\"\n}" }
+              }
+            },
+            {
+              "name": "Sign In — CRO  ✦ sets token",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('CRO signed in', () => pm.response.to.have.status(200));",
+                      "var json = pm.response.json();",
+                      "pm.collectionVariables.set('token', json.idToken);",
+                      "pm.collectionVariables.set('accessToken', json.accessToken);",
+                      "console.log('Signed in as CRO. idToken set as token.');"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "url": { "raw": "{{authBase}}/api/auth/signin", "host": ["{{authBase}}"], "path": ["api","auth","signin"] },
+                "body": { "mode": "raw", "raw": "{\n  \"username\": \"cro@study.com\",\n  \"password\": \"123456\",\n  \"role\": \"cro\"\n}" }
+              }
+            },
+            {
+              "name": "Sign In — HOSPITAL  ✦ sets token",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Hospital signed in', () => pm.response.to.have.status(200));",
+                      "var json = pm.response.json();",
+                      "pm.collectionVariables.set('token', json.idToken);",
+                      "pm.collectionVariables.set('accessToken', json.accessToken);",
+                      "console.log('Signed in as HOSPITAL. idToken set as token.');"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "url": { "raw": "{{authBase}}/api/auth/signin", "host": ["{{authBase}}"], "path": ["api","auth","signin"] },
+                "body": { "mode": "raw", "raw": "{\n  \"username\": \"hospital@study.com\",\n  \"password\": \"123456\",\n  \"role\": \"hospital\"\n}" }
+              }
+            }
+          ]
+        },
+
+        {
+          "name": "AUTH 05 — Assign Role",
+          "item": [
+            {
+              "name": "Assign Role to User",
+              "event": [{ "listen": "test", "script": { "exec": ["pm.test('Role assigned', () => pm.response.to.have.status(200));"], "type": "text/javascript" } }],
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type",  "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+                ],
+                "url": { "raw": "{{authBase}}/api/auth/assign-role", "host": ["{{authBase}}"], "path": ["api","auth","assign-role"] },
+                "body": { "mode": "raw", "raw": "{\n  \"username\": \"subject@study.com\",\n  \"role\": \"crc\"\n}" },
+                "description": "Promote an existing user to a different role. Roles: admin, subject, primary_investigator, co_investigator, crc, cro, hospital"
+              }
+            }
+          ]
+        },
+
+        {
+          "name": "AUTH 06 — Password Management",
+          "item": [
+            {
+              "name": "Change Password",
+              "event": [{ "listen": "test", "script": { "exec": ["pm.test('Password changed', () => pm.response.to.have.status(200));"], "type": "text/javascript" } }],
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "url": { "raw": "{{authBase}}/api/auth/change-password", "host": ["{{authBase}}"], "path": ["api","auth","change-password"] },
+                "body": { "mode": "raw", "raw": "{\n  \"accessToken\": \"{{accessToken}}\",\n  \"previousPassword\": \"123456\",\n  \"proposedPassword\": \"654321\"\n}" },
+                "description": "Uses the `accessToken` variable captured from Sign In. previousPassword must be exactly 6 digits; proposedPassword minimum 8 chars."
+              }
+            },
+            {
+              "name": "Forgot Password — Send Reset Code",
+              "event": [{ "listen": "test", "script": { "exec": ["pm.test('Reset code sent', () => pm.response.to.have.status(200));"], "type": "text/javascript" } }],
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "url": { "raw": "{{authBase}}/api/auth/forgot-password", "host": ["{{authBase}}"], "path": ["api","auth","forgot-password"] },
+                "body": { "mode": "raw", "raw": "{\n  \"username\": \"admin@study.com\"\n}" }
+              }
+            },
+            {
+              "name": "Confirm Forgot Password — Reset with Code",
+              "event": [{ "listen": "test", "script": { "exec": ["pm.test('Password reset', () => pm.response.to.have.status(200));"], "type": "text/javascript" } }],
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "url": { "raw": "{{authBase}}/api/auth/confirm-forgot-password", "host": ["{{authBase}}"], "path": ["api","auth","confirm-forgot-password"] },
+                "body": { "mode": "raw", "raw": "{\n  \"username\": \"admin@study.com\",\n  \"confirmationCode\": \"REPLACE_WITH_CODE_FROM_EMAIL\",\n  \"newPassword\": \"123456\"\n}" }
+              }
+            }
+          ]
+        },
+
+        {
+          "name": "AUTH 07 — Sign Out",
+          "item": [
+            {
+              "name": "Sign Out (global — invalidates all tokens)",
+              "event": [{ "listen": "test", "script": { "exec": ["pm.test('Signed out', () => pm.response.to.have.status(200));", "pm.collectionVariables.set('token', '');", "pm.collectionVariables.set('accessToken', '');"], "type": "text/javascript" } }],
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+                ],
+                "url": { "raw": "{{authBase}}/api/auth/logout", "host": ["{{authBase}}"], "path": ["api","auth","logout"] },
+                "description": "Uses the Cognito accessToken (not idToken) to perform global sign-out. Clears token variables on success."
+              }
+            }
+          ]
+        }
+
+      ]
+    },
+
+    {
+      "name": "STEP 01 — Create MPA",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "var json = pm.response.json();",
+              "pm.collectionVariables.set('mpaId', json.mpaId);",
+              "pm.test('MPA created', () => pm.response.to.have.status(201));",
+              "console.log('mpaId =', json.mpaId);"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type",  "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "url": {
+          "raw": "{{base}}/api/v1/mpa",
+          "host": ["{{base}}"],
+          "path": ["api", "v1", "mpa"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"mpaNumber\": \"MPA-2025-001\",\n  \"mpaName\": \"Accenture Clinical MPA\",\n  \"organizationName\": \"Accenture Health\",\n  \"contractType\": \"STANDARD\",\n  \"effectiveDate\": \"2025-01-01\",\n  \"expirationDate\": \"2027-12-31\",\n  \"contactName\": \"Dr. Admin\",\n  \"contactEmail\": \"admin@accenture.com\",\n  \"contactPhone\": \"9876543210\",\n  \"notes\": \"Primary MPA for all studies\"\n}"
+        }
+      }
+    },
+
+    {
+      "name": "STEP 02 — Create Medical Center",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "var json = pm.response.json();",
+              "pm.collectionVariables.set('centerId', json.centerId);",
+              "pm.test('Center created', () => pm.response.to.have.status(201));",
+              "console.log('centerId =', json.centerId);"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type",  "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "url": {
+          "raw": "{{base}}/api/v1/mpa/{{mpaId}}/centers",
+          "host": ["{{base}}"],
+          "path": ["api", "v1", "mpa", "{{mpaId}}", "centers"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"centerCode\": \"CTR-001\",\n  \"centerName\": \"Apollo Research Center\",\n  \"centerType\": \"ACADEMIC\",\n  \"addressLine1\": \"21 Health Street\",\n  \"addressLine2\": \"Floor 2\",\n  \"city\": \"Mumbai\",\n  \"state\": \"Maharashtra\",\n  \"zipCode\": \"400001\",\n  \"country\": \"India\",\n  \"phone\": \"9123456789\",\n  \"fax\": \"9123456780\",\n  \"email\": \"apollo@research.com\",\n  \"irbName\": \"Apollo Ethics Board\",\n  \"irbApprovalNumber\": \"IRB-2025-001\",\n  \"irbApprovalDate\": \"2025-01-15\",\n  \"irbExpiryDate\": \"2026-01-14\"\n}"
+        }
+      }
+    },
+
+    {
+      "name": "STEP 03 — Create Primary Investigator",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "var json = pm.response.json();",
+              "pm.collectionVariables.set('piId', json.piId);",
+              "pm.test('PI created', () => pm.response.to.have.status(201));",
+              "console.log('piId =', json.piId);"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type",  "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "url": {
+          "raw": "{{base}}/api/v1/investigators",
+          "host": ["{{base}}"],
+          "path": ["api", "v1", "investigators"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"piNumber\": \"PI-001\",\n  \"firstName\": \"Rajesh\",\n  \"lastName\": \"Kumar\",\n  \"title\": \"Dr.\",\n  \"credentials\": \"MD, PhD\",\n  \"specialty\": \"Oncology\",\n  \"email\": \"rajesh.kumar@apollo.com\",\n  \"phone\": \"9000011111\",\n  \"npiNumber\": \"NPI123456\",\n  \"licenseNumber\": \"LIC-MH-2025\",\n  \"licenseState\": \"Maharashtra\",\n  \"cvDocumentUrl\": \"https://docs.internal/cv/rajesh_kumar.pdf\"\n}"
+        }
+      }
+    },
+
+    {
+      "name": "STEP 04 — Assign PI to Medical Center",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "var json = pm.response.json();",
+              "if (json.assignmentId) pm.collectionVariables.set('assignmentId', json.assignmentId);",
+              "pm.test('PI assigned to center', () => pm.response.to.have.status(201));",
+              "console.log('PI-Center assignment done');"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type",  "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "url": {
+          "raw": "{{base}}/api/v1/investigators/{{piId}}/center-assignments",
+          "host": ["{{base}}"],
+          "path": ["api", "v1", "investigators", "{{piId}}", "center-assignments"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"centerId\": \"{{centerId}}\",\n  \"role\": \"PRIMARY_INVESTIGATOR\",\n  \"isPrimarySite\": true,\n  \"assignmentDate\": \"2025-01-01\"\n}"
+        }
+      }
+    },
+
+    {
+      "name": "STEP 05 — Create Clinical Study (→ INACTIVE)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "var json = pm.response.json();",
+              "pm.collectionVariables.set('studyId', json.studyId);",
+              "pm.test('Study created as INACTIVE', () => {",
+              "  pm.response.to.have.status(201);",
+              "  pm.expect(json.status).to.equal('INACTIVE');",
+              "});",
+              "console.log('studyId =', json.studyId);"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type",  "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "url": {
+          "raw": "{{base}}/api/v1/studies",
+          "host": ["{{base}}"],
+          "path": ["api", "v1", "studies"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"studyNumber\": \"STUDY-2025-001\",\n  \"studyName\": \"Phase II Oncology Trial\",\n  \"indication\": \"Non-Small Cell Lung Cancer\",\n  \"phase\": \"PHASE_II\",\n  \"protocolNumber\": \"PROTO-001\",\n  \"sponsorName\": \"Accenture Pharma\",\n  \"therapeuticArea\": \"Oncology\",\n  \"noOfPatientsToEnroll\": 30,\n  \"totalNumberOfVisits\": 5,\n  \"dateFirstPatientScreening\": \"2025-03-01\",\n  \"dateFirstPatientLastVisit\": \"2025-09-01\",\n  \"dateLastPatientFirstVisit\": \"2025-06-01\",\n  \"dateLastPatientLastVisit\": \"2025-12-01\",\n  \"createdByPiId\": \"{{piId}}\"\n}"
+        }
+      }
+    },
+
+    {
+      "name": "STEP 06 — Get Study Detail",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Study fetched', () => pm.response.to.have.status(200));"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "url": {
+          "raw": "{{base}}/api/v1/studies/{{studyId}}",
+          "host": ["{{base}}"],
+          "path": ["api", "v1", "studies", "{{studyId}}"]
+        }
+      }
+    },
+
+    {
+      "name": "STEP 07 — Assign Study to Site",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "var json = pm.response.json();",
+              "if (json.studySiteId) pm.collectionVariables.set('studySiteId', json.studySiteId);",
+              "pm.test('Site assigned', () => pm.response.to.have.status(201));",
+              "console.log('studySiteId =', json.studySiteId);"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type",  "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "url": {
+          "raw": "{{base}}/api/v1/studies/{{studyId}}/site-assignments",
+          "host": ["{{base}}"],
+          "path": ["api", "v1", "studies", "{{studyId}}", "site-assignments"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"centerId\": \"{{centerId}}\",\n  \"piId\": \"{{piId}}\",\n  \"siteNumber\": \"SITE-001\",\n  \"targetEnrollment\": 30,\n  \"activationDate\": \"2025-03-01\"\n}"
+        }
+      }
+    },
+
+    {
+      "name": "STEP 08 — Create Study Plan Visits (triggers cost calculation)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "var json = pm.response.json();",
+              "pm.test('Plan visits saved', () => pm.response.to.have.status(200));",
+              "pm.test('5 visits in plan', () => pm.expect(json.visits.length).to.equal(5));",
+              "console.log('totalCost =', json.totalCost);"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "PUT",
+        "header": [
+          { "key": "Content-Type",  "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "url": {
+          "raw": "{{base}}/api/v1/studies/{{studyId}}/plan-visits",
+          "host": ["{{base}}"],
+          "path": ["api", "v1", "studies", "{{studyId}}", "plan-visits"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"visits\": [\n    {\n      \"visitNumber\": 1,\n      \"visitName\": \"Screening\",\n      \"visitType\": \"SCREENING\",\n      \"typeOfVisitOrDose\": \"Screening\",\n      \"durationDays\": null,\n      \"durationDisplay\": \"Day 0\",\n      \"windowPeriodBefore\": 3,\n      \"windowPeriodAfter\": 3,\n      \"windowPeriodDisplay\": \"3 days | 3 days\",\n      \"dayVisitSpecificCompPattern\": \"once\",\n      \"targetDayOffset\": 0,\n      \"isMandatory\": true,\n      \"requiresFasting\": true,\n      \"procedures\": [\"Physical exam\", \"Blood draw\", \"ECG\", \"Informed consent\"],\n      \"visitCost\": 1500.00,\n      \"sortOrder\": 1\n    },\n    {\n      \"visitNumber\": 2,\n      \"visitName\": \"Baseline\",\n      \"visitType\": \"BASELINE\",\n      \"typeOfVisitOrDose\": \"Baseline\",\n      \"durationDays\": 14,\n      \"durationDisplay\": \"14 days\",\n      \"windowPeriodBefore\": 2,\n      \"windowPeriodAfter\": 2,\n      \"windowPeriodDisplay\": \"2 days | 2 days\",\n      \"dayVisitSpecificCompPattern\": \"once\",\n      \"targetDayOffset\": 14,\n      \"isMandatory\": true,\n      \"requiresFasting\": false,\n      \"procedures\": [\"Blood draw\", \"MRI\", \"Vitals\"],\n      \"visitCost\": 2000.00,\n      \"sortOrder\": 2\n    },\n    {\n      \"visitNumber\": 3,\n      \"visitName\": \"Treatment V1\",\n      \"visitType\": \"TREATMENT\",\n      \"typeOfVisitOrDose\": \"Treatment-Dose 1\",\n      \"durationDays\": 28,\n      \"durationDisplay\": \"28 days\",\n      \"windowPeriodBefore\": 3,\n      \"windowPeriodAfter\": 3,\n      \"windowPeriodDisplay\": \"3 days | 3 days\",\n      \"dayVisitSpecificCompPattern\": \"once\",\n      \"targetDayOffset\": 28,\n      \"isMandatory\": true,\n      \"requiresFasting\": false,\n      \"procedures\": [\"Drug administration\", \"Blood draw\", \"Vitals\"],\n      \"visitCost\": 2500.00,\n      \"sortOrder\": 3\n    },\n    {\n      \"visitNumber\": 4,\n      \"visitName\": \"Follow-Up\",\n      \"visitType\": \"FOLLOW_UP\",\n      \"typeOfVisitOrDose\": \"Follow-up\",\n      \"durationDays\": 60,\n      \"durationDisplay\": \"60 days\",\n      \"windowPeriodBefore\": 5,\n      \"windowPeriodAfter\": 5,\n      \"windowPeriodDisplay\": \"5 days | 5 days\",\n      \"dayVisitSpecificCompPattern\": \"once\",\n      \"targetDayOffset\": 60,\n      \"isMandatory\": true,\n      \"requiresFasting\": false,\n      \"procedures\": [\"Blood draw\", \"Adverse event check\"],\n      \"visitCost\": 1000.00,\n      \"sortOrder\": 4\n    },\n    {\n      \"visitNumber\": 5,\n      \"visitName\": \"End of Study\",\n      \"visitType\": \"END_OF_STUDY\",\n      \"typeOfVisitOrDose\": \"End of Study\",\n      \"durationDays\": 90,\n      \"durationDisplay\": \"90 days\",\n      \"windowPeriodBefore\": 5,\n      \"windowPeriodAfter\": 7,\n      \"windowPeriodDisplay\": \"5 days | 7 days\",\n      \"dayVisitSpecificCompPattern\": \"once\",\n      \"targetDayOffset\": 90,\n      \"isMandatory\": true,\n      \"requiresFasting\": true,\n      \"procedures\": [\"Final assessment\", \"Blood draw\", \"Study drug return\"],\n      \"visitCost\": 1200.00,\n      \"sortOrder\": 5\n    }\n  ]\n}"
+        }
+      }
+    },
+
+    {
+      "name": "STEP 09 — Get Study Plan Visits",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Plan visits returned', () => pm.response.to.have.status(200));"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "url": {
+          "raw": "{{base}}/api/v1/studies/{{studyId}}/plan-visits",
+          "host": ["{{base}}"],
+          "path": ["api", "v1", "studies", "{{studyId}}", "plan-visits"]
+        }
+      }
+    },
+
+    {
+      "name": "STEP 10 — Create Payment for Study",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "var json = pm.response.json();",
+              "pm.collectionVariables.set('paymentId', json.paymentId);",
+              "pm.test('Payment created', () => pm.response.to.have.status(201));",
+              "console.log('paymentId =', json.paymentId);"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type",  "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "url": {
+          "raw": "{{base}}/api/v1/studies/{{studyId}}/payments",
+          "host": ["{{base}}"],
+          "path": ["api", "v1", "studies", "{{studyId}}", "payments"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"paymentType\": \"STUDY_ACTIVATION\",\n  \"ratePerService\": 500.00,\n  \"gstPercentage\": 18.00,\n  \"currency\": \"USD\",\n  \"paymentMethod\": \"BANK_TRANSFER\",\n  \"invoiceNumber\": \"INV-2025-001\",\n  \"dueDate\": \"2025-03-15\",\n  \"notes\": \"Initial activation payment\"\n}"
+        }
+      }
+    },
+
+    {
+      "name": "STEP 11 — Payment Webhook (simulate SUCCESS → study goes ACTIVE)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Webhook accepted', () => pm.response.to.have.status(200));"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": {
+          "raw": "{{base}}/api/v1/payments/webhook",
+          "host": ["{{base}}"],
+          "path": ["api", "v1", "payments", "webhook"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"paymentId\": \"{{paymentId}}\",\n  \"paymentGatewayRef\": \"GW-REF-ABC123\",\n  \"status\": \"SUCCESS\"\n}"
+        }
+      }
+    },
+
+    {
+      "name": "STEP 12 — Activate Study (INACTIVE → ACTIVE)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "var json = pm.response.json();",
+              "pm.test('Study is ACTIVE', () => {",
+              "  pm.response.to.have.status(200);",
+              "  pm.expect(json.status).to.equal('ACTIVE');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "PATCH",
+        "header": [
+          { "key": "Content-Type",  "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "url": {
+          "raw": "{{base}}/api/v1/studies/{{studyId}}/status",
+          "host": ["{{base}}"],
+          "path": ["api", "v1", "studies", "{{studyId}}", "status"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"status\": \"ACTIVE\"\n}"
+        }
+      }
+    },
+
+    {
+      "name": "STEP 13 — Grant Study Access (CRC role)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "var json = pm.response.json();",
+              "if (json.accessId) pm.collectionVariables.set('accessId', json.accessId);",
+              "pm.test('Access granted', () => pm.response.to.have.status(201));",
+              "console.log('accessId =', json.accessId);"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type",  "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "url": {
+          "raw": "{{base}}/api/v1/studies/{{studyId}}/access",
+          "host": ["{{base}}"],
+          "path": ["api", "v1", "studies", "{{studyId}}", "access"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"userId\": \"user-crc-00000001\",\n  \"userRole\": \"CRC\",\n  \"accessLevel\": \"READ_WRITE\"\n}"
+        }
+      }
+    },
+
+    {
+      "name": "STEP 14 — List Study Access",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Access list returned', () => pm.response.to.have.status(200));"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "url": {
+          "raw": "{{base}}/api/v1/studies/{{studyId}}/access?active=true",
+          "host": ["{{base}}"],
+          "path": ["api", "v1", "studies", "{{studyId}}", "access"],
+          "query": [{ "key": "active", "value": "true" }]
+        }
+      }
+    },
+
+    {
+      "name": "STEP 15 — Create Patient",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "var json = pm.response.json();",
+              "pm.collectionVariables.set('patientId', json.patientId);",
+              "pm.test('Patient created', () => pm.response.to.have.status(201));",
+              "console.log('patientId =', json.patientId);"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type",  "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "url": {
+          "raw": "{{base}}/api/v1/patients",
+          "host": ["{{base}}"],
+          "path": ["api", "v1", "patients"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"firstName\": \"Anita\",\n  \"lastName\": \"Sharma\",\n  \"initials\": \"AS\",\n  \"dateOfBirth\": \"1985-06-15\",\n  \"gender\": \"FEMALE\",\n  \"race\": \"ASIAN\",\n  \"ethnicity\": \"NON_HISPANIC\",\n  \"phone\": \"9876500001\",\n  \"email\": \"anita.sharma@email.com\",\n  \"emergencyContact\": \"Ravi Sharma\",\n  \"emergencyPhone\": \"9876500002\"\n}"
+        }
+      }
+    },
+
+    {
+      "name": "STEP 16 — Enroll Patient in Study (auto-generates visits + study logs)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "var json = pm.response.json();",
+              "pm.collectionVariables.set('enrollmentId', json.enrollmentId);",
+              "pm.test('Patient enrolled', () => {",
+              "  pm.response.to.have.status(201);",
+              "  pm.expect(json.enrollmentStatus).to.equal('ENROLLED');",
+              "});",
+              "console.log('enrollmentId =', json.enrollmentId);"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type",  "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "url": {
+          "raw": "{{base}}/api/v1/studies/{{studyId}}/enrollments",
+          "host": ["{{base}}"],
+          "path": ["api", "v1", "studies", "{{studyId}}", "enrollments"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"patientId\": \"{{patientId}}\",\n  \"studySiteId\": \"{{studySiteId}}\",\n  \"subjectNumber\": \"SUBJ-001\",\n  \"screeningDate\": \"2025-03-01\",\n  \"enrollmentDate\": \"2025-03-15\",\n  \"informedConsentDate\": \"2025-03-01\",\n  \"consentVersion\": \"v1.0\",\n  \"consentDocumentUrl\": \"https://docs.internal/consent/subj-001.pdf\"\n}"
+        }
+      }
+    },
+
+    {
+      "name": "STEP 17 — List Enrolled Patients",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Enrollments listed', () => pm.response.to.have.status(200));"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "url": {
+          "raw": "{{base}}/api/v1/studies/{{studyId}}/enrollments?page=1&size=20",
+          "host": ["{{base}}"],
+          "path": ["api", "v1", "studies", "{{studyId}}", "enrollments"],
+          "query": [
+            { "key": "page", "value": "1" },
+            { "key": "size", "value": "20" }
+          ]
+        }
+      }
+    },
+
+    {
+      "name": "STEP 18 — Get Visit Schedule for Enrolled Subject",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "var json = pm.response.json();",
+              "if (json.visits && json.visits.length > 0) {",
+              "  pm.collectionVariables.set('visitId', json.visits[0].visitId);",
+              "  console.log('visitId (visit 1) =', json.visits[0].visitId);",
+              "}",
+              "pm.test('Visit schedule returned', () => pm.response.to.have.status(200));"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "url": {
+          "raw": "{{base}}/api/v1/studies/{{studyId}}/enrollments/{{enrollmentId}}/visits",
+          "host": ["{{base}}"],
+          "path": ["api", "v1", "studies", "{{studyId}}", "enrollments", "{{enrollmentId}}", "visits"]
+        }
+      }
+    },
+
+    {
+      "name": "STEP 18b — Get Full Study Schedule (all subjects)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Study schedule returned', () => pm.response.to.have.status(200));"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "url": {
+          "raw": "{{base}}/api/v1/studies/{{studyId}}/schedule",
+          "host": ["{{base}}"],
+          "path": ["api", "v1", "studies", "{{studyId}}", "schedule"]
+        }
+      }
+    },
+
+    {
+      "name": "STEP 19 — Complete Visit (Visit 1 — Screening)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "var json = pm.response.json();",
+              "pm.test('Visit completed', () => {",
+              "  pm.response.to.have.status(200);",
+              "  pm.expect(json.visitStatus).to.equal('COMPLETED');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "PATCH",
+        "header": [
+          { "key": "Content-Type",  "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "url": {
+          "raw": "{{base}}/api/v1/visits/{{visitId}}/complete",
+          "host": ["{{base}}"],
+          "path": ["api", "v1", "visits", "{{visitId}}", "complete"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"actualDate\": \"2025-03-15\",\n  \"checkInTime\": \"2025-03-15T09:00:00Z\",\n  \"checkOutTime\": \"2025-03-15T11:30:00Z\",\n  \"durationMinutes\": 150,\n  \"vitalsRecorded\": true,\n  \"adverseEvents\": false,\n  \"labSamplesTaken\": true,\n  \"proceduresDone\": \"Physical exam, Blood draw, ECG\",\n  \"investigatorNotes\": \"Patient tolerated screening well. All procedures completed per protocol.\",\n  \"coordinatorNotes\": \"Patient arrived on time. Consent re-confirmed.\",\n  \"performedByPiId\": \"{{piId}}\"\n}"
+        }
+      }
+    },
+
+    {
+      "name": "STEP 19b — Reschedule a Visit (optional)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Visit rescheduled', () => pm.response.to.have.status(200));"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "PATCH",
+        "header": [
+          { "key": "Content-Type",  "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "url": {
+          "raw": "{{base}}/api/v1/visits/{{visitId}}/reschedule",
+          "host": ["{{base}}"],
+          "path": ["api", "v1", "visits", "{{visitId}}", "reschedule"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"newScheduledDate\": \"2025-03-20\"\n}"
+        }
+      }
+    },
+
+    {
+      "name": "STEP 19c — Mark Visit as Missed (optional)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Visit marked missed', () => pm.response.to.have.status(200));"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "PATCH",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "url": {
+          "raw": "{{base}}/api/v1/visits/{{visitId}}/missed",
+          "host": ["{{base}}"],
+          "path": ["api", "v1", "visits", "{{visitId}}", "missed"]
+        }
+      }
+    },
+
+    {
+      "name": "STEP 20 — Get Patient Study Logs (CRC tracking grid)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "var json = pm.response.json();",
+              "if (Array.isArray(json) && json.length > 0) {",
+              "  pm.collectionVariables.set('logId', json[0].logId);",
+              "  console.log('logId =', json[0].logId);",
+              "}",
+              "pm.test('Study logs returned', () => pm.response.to.have.status(200));"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "url": {
+          "raw": "{{base}}/api/v1/studies/{{studyId}}/study-logs",
+          "host": ["{{base}}"],
+          "path": ["api", "v1", "studies", "{{studyId}}", "study-logs"]
+        }
+      }
+    },
+
+    {
+      "name": "STEP 20b — Get Study Logs for Enrollment",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Enrollment logs returned', () => pm.response.to.have.status(200));"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "url": {
+          "raw": "{{base}}/api/v1/studies/{{studyId}}/enrollments/{{enrollmentId}}/study-logs",
+          "host": ["{{base}}"],
+          "path": ["api", "v1", "studies", "{{studyId}}", "enrollments", "{{enrollmentId}}", "study-logs"]
+        }
+      }
+    },
+
+    {
+      "name": "STEP 21 — Record Actual Visit Date in Study Log",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Actual visit recorded in log', () => pm.response.to.have.status(200));"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "PATCH",
+        "header": [
+          { "key": "Content-Type",  "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "url": {
+          "raw": "{{base}}/api/v1/studies/{{studyId}}/study-logs/{{logId}}/actual-visit",
+          "host": ["{{base}}"],
+          "path": ["api", "v1", "studies", "{{studyId}}", "study-logs", "{{logId}}", "actual-visit"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"actualDate\": \"2025-03-15\"\n}"
+        }
+      }
+    },
+
+    {
+      "name": "STEP 22 — Withdraw Patient (optional)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "var json = pm.response.json();",
+              "pm.test('Patient withdrawn', () => {",
+              "  pm.response.to.have.status(200);",
+              "  pm.expect(json.enrollmentStatus).to.equal('WITHDRAWN');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "PATCH",
+        "header": [
+          { "key": "Content-Type",  "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "url": {
+          "raw": "{{base}}/api/v1/studies/{{studyId}}/enrollments/{{enrollmentId}}/withdraw",
+          "host": ["{{base}}"],
+          "path": ["api", "v1", "studies", "{{studyId}}", "enrollments", "{{enrollmentId}}", "withdraw"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"withdrawalDate\": \"2025-05-01\",\n  \"withdrawalReason\": \"Patient request — relocated\"\n}"
+        }
+      }
+    },
+
+    {
+      "name": "STEP 23 — Revoke Study Access (optional)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Access revoked', () => pm.response.to.have.status(200));"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "url": {
+          "raw": "{{base}}/api/v1/studies/{{studyId}}/access/{{accessId}}",
+          "host": ["{{base}}"],
+          "path": ["api", "v1", "studies", "{{studyId}}", "access", "{{accessId}}"]
+        }
+      }
+    },
+
+    {
+      "name": "STEP 24 — Disable Study (terminal state)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "var json = pm.response.json();",
+              "pm.test('Study disabled', () => {",
+              "  pm.response.to.have.status(200);",
+              "  pm.expect(json.status).to.equal('DISABLED');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "PATCH",
+        "header": [
+          { "key": "Content-Type",  "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "url": {
+          "raw": "{{base}}/api/v1/studies/{{studyId}}/status",
+          "host": ["{{base}}"],
+          "path": ["api", "v1", "studies", "{{studyId}}", "status"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"status\": \"DISABLED\",\n  \"reason\": \"Study completed successfully. All objectives met.\"\n}"
+        }
+      }
+    },
+
+    {
+      "name": "— Reference & Lookups —",
+      "item": [
+
+        {
+          "name": "List All MPAs",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{base}}/api/v1/mpa?page=1&size=20",
+              "host": ["{{base}}"], "path": ["api","v1","mpa"],
+              "query": [{ "key": "page", "value": "1" }, { "key": "size", "value": "20" }]
+            }
+          }
+        },
+
+        {
+          "name": "Get MPA by ID",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{base}}/api/v1/mpa/{{mpaId}}",
+              "host": ["{{base}}"], "path": ["api","v1","mpa","{{mpaId}}"]
+            }
+          }
+        },
+
+        {
+          "name": "Get Center Detail",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{base}}/api/v1/centers/{{centerId}}",
+              "host": ["{{base}}"], "path": ["api","v1","centers","{{centerId}}"]
+            }
+          }
+        },
+
+        {
+          "name": "List All Investigators",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{base}}/api/v1/investigators",
+              "host": ["{{base}}"], "path": ["api","v1","investigators"]
+            }
+          }
+        },
+
+        {
+          "name": "Get PI Dashboard",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{base}}/api/v1/investigators/{{piId}}/dashboard",
+              "host": ["{{base}}"], "path": ["api","v1","investigators","{{piId}}","dashboard"]
+            }
+          }
+        },
+
+        {
+          "name": "List All Studies",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{base}}/api/v1/studies",
+              "host": ["{{base}}"], "path": ["api","v1","studies"]
+            }
+          }
+        },
+
+        {
+          "name": "My Studies (PI view)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{base}}/api/v1/studies/my-studies",
+              "host": ["{{base}}"], "path": ["api","v1","studies","my-studies"]
+            }
+          }
+        },
+
+        {
+          "name": "Search Patients",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{base}}/api/v1/patients?page=1&size=20",
+              "host": ["{{base}}"], "path": ["api","v1","patients"],
+              "query": [
+                { "key": "search", "value": "", "disabled": true },
+                { "key": "status", "value": "", "disabled": true },
+                { "key": "page",   "value": "1" },
+                { "key": "size",   "value": "20" }
+              ]
+            }
+          }
+        },
+
+        {
+          "name": "Get Payment History for Study",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{base}}/api/v1/studies/{{studyId}}/payments",
+              "host": ["{{base}}"], "path": ["api","v1","studies","{{studyId}}","payments"]
+            }
+          }
+        },
+
+        {
+          "name": "Swagger UI",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base}}/swagger-ui/index.html",
+              "host": ["{{base}}"], "path": ["swagger-ui","index.html"]
+            },
+            "description": "Open in browser to explore all API endpoints interactively."
+          }
+        },
+
+        {
+          "name": "H2 Console",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base}}/h2-console",
+              "host": ["{{base}}"], "path": ["h2-console"]
+            },
+            "description": "Open in browser. JDBC URL: jdbc:h2:mem:studydb  User: sa  Password: (empty)"
+          }
+        }
+
+      ]
+    }
+
+  ]
+}

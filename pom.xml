@@ -7,9 +7,15 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>4.0.0</version>
+        <version>3.3.4</version>
         <relativePath/>
     </parent>
+    <properties>
+        <java.version>21</java.version>
+        <maven.compiler.source>21</maven.compiler.source>
+        <maven.compiler.target>21</maven.compiler.target>
+        <lombok.version>1.18.42</lombok.version>
+    </properties>
 
     <groupId>com.study</groupId>
     <artifactId>study-management</artifactId>
@@ -17,10 +23,7 @@
     <packaging>jar</packaging>
     <name>Study Management System</name>
 
-    <properties>
-        <java.version>25</java.version>
-        <lombok.version>1.18.42</lombok.version>
-    </properties>
+
 
     <dependencies>
         <!-- Spring Boot Web -->
@@ -45,6 +48,18 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+
+        <!-- Spring Security -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+
+        <!-- OAuth2 Resource Server — JWT validation via AWS Cognito JWKS -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
         </dependency>
 
         <!-- H2 In-Memory Database (for dev/demo) -->
@@ -81,6 +96,13 @@
             <groupId>org.springdoc</groupId>
             <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
             <version>2.5.0</version>
+        </dependency>
+
+        <!-- AWS SDK v2 — Cognito user status checks (AdminGetUser) -->
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>cognitoidentityprovider</artifactId>
+            <version>2.29.0</version>
         </dependency>
     </dependencies>
 

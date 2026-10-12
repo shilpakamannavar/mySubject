@@ -28,6 +28,9 @@ public interface StudyUseCase {
     /** "My Studies" screen — only ACTIVE studies */
     List<Study> getActiveStudies();
 
+    /** PI "My Studies" — all studies created by this PI (identified by their Cognito phone_number) */
+    List<Study> getStudiesByPiPhone(String phone);
+
     /** All studies regardless of status */
     List<Study> getAllStudies();
 

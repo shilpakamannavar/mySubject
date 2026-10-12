@@ -33,4 +33,7 @@ public interface JpaStudyRepository extends JpaRepository<Study, Long> {
     @Override
     @EntityGraph(attributePaths = {"visits", "invoice", "customer"})
     List<Study> findAll();
+
+    @EntityGraph(attributePaths = {"visits", "invoice", "customer"})
+    List<Study> findByCreatedByPhone(String phone);
 }

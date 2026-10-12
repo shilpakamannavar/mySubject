@@ -17,4 +17,5 @@ interface JpaStudyEnrollmentRepository extends JpaRepository<StudyEnrollment, UU
     List<StudyEnrollment> findByStudyAndEnrollmentStatus(StudyEntity study, EnrollmentStatus status);
     boolean existsByStudyAndPatient(StudyEntity study, PatientEntity patient);
     List<StudyEnrollment> findByStudyAndEnrollmentStatusIn(StudyEntity study, List<EnrollmentStatus> statuses);
+    List<StudyEnrollment> findByPatient(PatientEntity patient);
 }

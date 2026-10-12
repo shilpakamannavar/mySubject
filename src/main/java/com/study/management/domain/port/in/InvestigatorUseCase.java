@@ -11,5 +11,6 @@ public interface InvestigatorUseCase {
     PrimaryInvestigator createInvestigator(PrimaryInvestigator pi);
     PiCenterAssignment assignToCenter(UUID piId, PiCenterAssignment assignment);
     PrimaryInvestigator getById(UUID piId);
+    List<PrimaryInvestigator> listAll();
     List<PiCenterAssignment> getAssignments(UUID piId, AssignmentStatus status);
 }

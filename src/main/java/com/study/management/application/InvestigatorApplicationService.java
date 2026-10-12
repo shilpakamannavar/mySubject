@@ -11,6 +11,8 @@ import com.study.management.domain.port.out.MedicalCenterPort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.UUID;
 
@@ -29,9 +31,17 @@ public class InvestigatorApplicationService implements InvestigatorUseCase {
 
     @Override
     public PrimaryInvestigator createInvestigator(PrimaryInvestigator pi) {
-        if (pi.getEmail() != null && investigatorPort.existsByEmail(pi.getEmail())) {
+        // case-insensitive email check (findByEmail delegates to findByEmailIgnoreCase)
+        if (pi.getEmail() != null && investigatorPort.findByEmail(pi.getEmail()).isPresent()) {
             throw new IllegalArgumentException("Investigator with email '" + pi.getEmail() + "' already exists.");
         }
+        // phone check covers users who registered in Cognito with phone only (no email)
+        if (pi.getPhone() != null && investigatorPort.findByPhone(pi.getPhone()).isPresent()) {
+            throw new IllegalArgumentException("Investigator with phone '" + pi.getPhone() + "' already exists.");
+        }
+        String datePart = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+        String suffix   = UUID.randomUUID().toString().replace("-", "").substring(0, 6).toUpperCase();
+        pi.setPiNumber("PI-" + datePart + "-" + suffix);
         return investigatorPort.save(pi);
     }
 
@@ -52,6 +62,12 @@ public class InvestigatorApplicationService implements InvestigatorUseCase {
     public PrimaryInvestigator getById(UUID piId) {
         return investigatorPort.findById(piId)
                 .orElseThrow(() -> new ResourceNotFoundException("PrimaryInvestigator", piId));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<PrimaryInvestigator> listAll() {
+        return investigatorPort.findAll();
     }
 
     @Override

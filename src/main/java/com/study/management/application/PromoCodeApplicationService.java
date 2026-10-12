@@ -23,6 +23,15 @@ public class PromoCodeApplicationService implements PromoCodeUseCase {
     }
 
     @Override
+    @Transactional
+    public PromoCode create(PromoCode promoCode) {
+        promoCode.setCode(promoCode.getCode().trim().toUpperCase());
+        promoCode.setUsedCount(0);
+        promoCode.setActive(true);
+        return promoCodePort.save(promoCode);
+    }
+
+    @Override
     public PromoCode validate(String code) {
         PromoCode promo = promoCodePort.findByCode(code.trim())
                 .orElseThrow(() -> new IllegalArgumentException(

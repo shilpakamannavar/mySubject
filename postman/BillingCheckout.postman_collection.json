@@ -1,0 +1,456 @@
+{
+  "info": {
+    "name": "GST Billing Checkout",
+    "description": "Complete B2B GST billing flow: sign-in → validate GSTIN → checkout → Razorpay payment → invoice retrieval. \n\nBase URL: http://localhost:8080\n\nFlow order:\n1. Sign In (saves idToken to variable)\n2. Validate GSTIN (optional pre-check)\n3. Checkout (creates DRAFT invoice + Razorpay order)\n4. Complete Razorpay payment (frontend widget)\n5. Get Invoice by Number\n6. Get Invoice by Order ID\n7. Admin: Download GSTR-1 CSV\n8. Admin: Assign Role (fix 403 for existing users)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl",       "value": "http://localhost:8080",  "type": "string" },
+    { "key": "phoneNumber",   "value": "+919845309137",          "type": "string" },
+    { "key": "pin",           "value": "123456",                 "type": "string" },
+    { "key": "idToken",       "value": "",                       "type": "string" },
+    { "key": "invoiceNumber", "value": "",                       "type": "string" },
+    { "key": "orderId",       "value": "",                       "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "1. Auth",
+      "item": [
+        {
+          "name": "1.1 Sign In (get idToken)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var json = pm.response.json();",
+                  "if (json.idToken) {",
+                  "    pm.collectionVariables.set('idToken', json.idToken);",
+                  "    pm.test('idToken saved', function() { pm.expect(json.idToken).to.be.a('string'); });",
+                  "} else {",
+                  "    pm.test('Sign-in failed — check phone/pin', function() { pm.expect(json.idToken).to.exist; });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phoneNumber\": \"{{phoneNumber}}\",\n  \"pin\": \"{{pin}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/phone/signin",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auth", "phone", "signin"]
+            },
+            "description": "Authenticates with phone + PIN. Saves idToken to collection variable automatically."
+          },
+          "response": [
+            {
+              "name": "200 Success",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"accessToken\":  \"eyJra...\",\n  \"idToken\":      \"eyJra...\",\n  \"refreshToken\": \"eyJjb...\",\n  \"expiresIn\":    3600,\n  \"tokenType\":    \"Bearer\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2. GSTIN Validation",
+      "item": [
+        {
+          "name": "2.1 Validate GSTIN — intra-state (valid)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/billing/gstin/validate?gstin=27ABCDE1234F1Z5&billingState=Maharashtra",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "billing", "gstin", "validate"],
+              "query": [
+                { "key": "gstin",        "value": "27ABCDE1234F1Z5" },
+                { "key": "billingState", "value": "Maharashtra" }
+              ]
+            },
+            "description": "Validates GSTIN format and checks that the first-2-digit state code matches the declared billing state. State code 27 = Maharashtra (intra-state → CGST+SGST applies)."
+          },
+          "response": [
+            {
+              "name": "200 Valid",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"valid\":     true,\n  \"stateCode\": \"27\",\n  \"stateName\": \"Maharashtra\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "2.2 Validate GSTIN — inter-state (valid)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/billing/gstin/validate?gstin=29ABCDE1234F1Z5&billingState=Karnataka",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "billing", "gstin", "validate"],
+              "query": [
+                { "key": "gstin",        "value": "29ABCDE1234F1Z5" },
+                { "key": "billingState", "value": "Karnataka" }
+              ]
+            },
+            "description": "State code 29 = Karnataka. Platform is registered in Maharashtra (27) → inter-state → IGST 18% applies."
+          },
+          "response": [
+            {
+              "name": "200 Valid",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"valid\":     true,\n  \"stateCode\": \"29\",\n  \"stateName\": \"Karnataka\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "2.3 Validate GSTIN — state mismatch (rejected)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/billing/gstin/validate?gstin=27ABCDE1234F1Z5&billingState=Karnataka",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "billing", "gstin", "validate"],
+              "query": [
+                { "key": "gstin",        "value": "27ABCDE1234F1Z5" },
+                { "key": "billingState", "value": "Karnataka" }
+              ]
+            },
+            "description": "GSTIN state code is 27 (Maharashtra) but declared state is Karnataka → blocked."
+          },
+          "response": [
+            {
+              "name": "400 Mismatch",
+              "status": "Bad Request",
+              "code": 400,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"valid\":        false,\n  \"errorMessage\": \"GSTIN state code 27 (Maharashtra) does not match declared billing state 'Karnataka'. Transaction blocked to prevent faulty GST filing.\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3. Checkout",
+      "item": [
+        {
+          "name": "3.1 Checkout — PI (intra-state CGST+SGST)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var json = pm.response.json();",
+                  "if (json.invoiceNumber) {",
+                  "    pm.collectionVariables.set('invoiceNumber', json.invoiceNumber);",
+                  "    pm.test('invoiceNumber saved', function() { pm.expect(json.invoiceNumber).to.be.a('string'); });",
+                  "}",
+                  "if (json.razorpayOrderId) {",
+                  "    pm.collectionVariables.set('orderId', json.razorpayOrderId);",
+                  "    pm.test('orderId saved', function() { pm.expect(json.razorpayOrderId).to.be.a('string'); });",
+                  "}",
+                  "pm.test('Tax type is CGST_SGST', function() {",
+                  "    pm.expect(json.taxType).to.eql('CGST_SGST');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type",  "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{idToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phoneNumber\":       \"{{phoneNumber}}\",\n  \"businessName\":      \"Dr. Ravi Kumar Clinic\",\n  \"gstin\":             \"27ABCDE1234F1Z5\",\n  \"billingState\":      \"Maharashtra\",\n  \"registeredAddress\": \"401, MG Road, Pune 411001\",\n  \"businessEmail\":     \"ravi.kumar@clinic.com\",\n  \"baseAmount\":        50000.00,\n  \"serviceDescription\": \"Clinical Study Management Platform Access\",\n  \"sacCode\":           \"997331\",\n  \"referenceId\":       \"STUDY-20260911-001\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/billing/checkout",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "billing", "checkout"]
+            },
+            "description": "PI checkout — intra-state (Maharashtra). Platform state code = 27, GSTIN state code = 27 → CGST 9% + SGST 9% = 18% GST on ₹50,000 base → total ₹59,000.\n\nphoneNumber is the E.164 phone used at sign-up. Backend resolves PI or Hospital record automatically — no UUID needed on frontend."
+          },
+          "response": [
+            {
+              "name": "200 CGST+SGST Invoice Created",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"invoiceNumber\":      \"TI/2026-09/0001\",\n  \"razorpayOrderId\":   \"order_MOCK_abc123xyz\",\n  \"taxType\":           \"CGST_SGST\",\n  \"taxTypeLabel\":      \"CGST + SGST (Intra-state)\",\n  \"baseAmount\":        50000.00,\n  \"cgstRate\":          9.00,\n  \"cgstAmount\":        4500.00,\n  \"sgstRate\":          9.00,\n  \"sgstAmount\":        4500.00,\n  \"igstRate\":          0.00,\n  \"igstAmount\":        0.00,\n  \"totalAmount\":       59000.00,\n  \"amountInPaise\":     5900000,\n  \"placeOfSupply\":     \"27\",\n  \"gstin\":             \"27ABCDE1234F1Z5\",\n  \"businessName\":      \"Dr. Ravi Kumar Clinic\",\n  \"sacCode\":           \"997331\",\n  \"serviceDescription\": \"Clinical Study Management Platform Access\",\n  \"invoiceDate\":       \"2026-09-11\",\n  \"status\":            \"DRAFT\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "3.2 Checkout — Hospital/SMO (inter-state IGST)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var json = pm.response.json();",
+                  "if (json.invoiceNumber) pm.collectionVariables.set('invoiceNumber', json.invoiceNumber);",
+                  "if (json.razorpayOrderId) pm.collectionVariables.set('orderId', json.razorpayOrderId);",
+                  "pm.test('Tax type is IGST', function() {",
+                  "    pm.expect(json.taxType).to.eql('IGST');",
+                  "});",
+                  "pm.test('IGST rate is 18%', function() {",
+                  "    pm.expect(json.igstRate).to.eql(18.00);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type",  "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{idToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phoneNumber\":       \"+919876543210\",\n  \"businessName\":      \"Apollo Hospitals Pvt Ltd\",\n  \"gstin\":             \"29ABCDE1234F1Z5\",\n  \"billingState\":      \"Karnataka\",\n  \"registeredAddress\": \"154/11, Bannerghatta Road, Bengaluru 560076\",\n  \"businessEmail\":     \"billing@apollobengaluru.com\",\n  \"baseAmount\":        100000.00,\n  \"serviceDescription\": \"Clinical Study Management Platform Access\",\n  \"sacCode\":           \"997331\",\n  \"referenceId\":       \"STUDY-20260911-002\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/billing/checkout",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "billing", "checkout"]
+            },
+            "description": "Hospital/SMO checkout — inter-state (Karnataka, state code 29). Platform is registered in Maharashtra (27) → IGST 18% on ₹1,00,000 base → total ₹1,18,000.\n\nBackend finds no PI for this phone, falls back to Hospital lookup automatically."
+          },
+          "response": [
+            {
+              "name": "200 IGST Invoice Created",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"invoiceNumber\":      \"TI/2026-09/0002\",\n  \"razorpayOrderId\":   \"order_MOCK_def456uvw\",\n  \"taxType\":           \"IGST\",\n  \"taxTypeLabel\":      \"IGST (Inter-state)\",\n  \"baseAmount\":        100000.00,\n  \"cgstRate\":          0.00,\n  \"cgstAmount\":        0.00,\n  \"sgstRate\":          0.00,\n  \"sgstAmount\":        0.00,\n  \"igstRate\":          18.00,\n  \"igstAmount\":        18000.00,\n  \"totalAmount\":       118000.00,\n  \"amountInPaise\":     11800000,\n  \"placeOfSupply\":     \"29\",\n  \"gstin\":             \"29ABCDE1234F1Z5\",\n  \"businessName\":      \"Apollo Hospitals Pvt Ltd\",\n  \"sacCode\":           \"997331\",\n  \"serviceDescription\": \"Clinical Study Management Platform Access\",\n  \"invoiceDate\":       \"2026-09-11\",\n  \"status\":            \"DRAFT\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "3.3 Checkout — phone not found (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type",  "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{idToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phoneNumber\":       \"+919999999999\",\n  \"businessName\":      \"Unknown Clinic\",\n  \"gstin\":             \"27ABCDE1234F1Z5\",\n  \"billingState\":      \"Maharashtra\",\n  \"registeredAddress\": \"123 Unknown Road\",\n  \"businessEmail\":     \"unknown@clinic.com\",\n  \"baseAmount\":        10000.00\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/billing/checkout",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "billing", "checkout"]
+            },
+            "description": "Demonstrates the error when no PI or Hospital profile exists for the phone. Fix: call POST /api/v1/investigators or /api/v1/hospitals to create the profile first."
+          },
+          "response": [
+            {
+              "name": "400 Not Found",
+              "status": "Bad Request",
+              "code": 400,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"status\": 400,\n  \"error\":  \"Bad Request\",\n  \"message\": \"No Primary Investigator or Hospital/SMO found for phone: +919999999999. Ensure the profile is registered at POST /api/v1/investigators or /api/v1/hospitals.\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "4. Invoice Retrieval",
+      "item": [
+        {
+          "name": "4.1 Get Invoice by Number",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{idToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/billing/invoice/{{invoiceNumber}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "billing", "invoice", "{{invoiceNumber}}"]
+            },
+            "description": "Retrieves the full tax invoice by its sequential number (e.g. TI/2026-09/0001). invoiceNumber is auto-populated from the checkout response."
+          },
+          "response": [
+            {
+              "name": "200 Invoice",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"invoiceNumber\":   \"TI/2026-09/0001\",\n  \"invoiceDate\":     \"2026-09-11\",\n  \"status\":          \"DRAFT\",\n  \"taxType\":         \"CGST_SGST\",\n  \"baseAmount\":      50000.00,\n  \"cgstRate\":        9.00,\n  \"cgstAmount\":      4500.00,\n  \"sgstRate\":        9.00,\n  \"sgstAmount\":      4500.00,\n  \"igstRate\":        0.00,\n  \"igstAmount\":      0.00,\n  \"totalAmount\":     59000.00,\n  \"placeOfSupply\":   \"27\",\n  \"referenceId\":     \"STUDY-20260911-001\",\n  \"razorpayOrderId\": \"order_MOCK_abc123xyz\",\n  \"razorpayPaymentId\": null,\n  \"paidAt\":          null,\n  \"createdAt\":       \"2026-09-11T10:30:00Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "4.2 Get Invoice by Razorpay Order ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{idToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/billing/invoice/by-order/{{orderId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "billing", "invoice", "by-order", "{{orderId}}"]
+            },
+            "description": "Retrieves the tax invoice using the Razorpay orderId. Use this on the payment confirmation screen after Razorpay checkout completes — orderId is available in the Razorpay callback. orderId is auto-populated from the checkout response."
+          },
+          "response": [
+            {
+              "name": "200 Invoice (PAID after webhook)",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"invoiceNumber\":     \"TI/2026-09/0001\",\n  \"invoiceDate\":       \"2026-09-11\",\n  \"status\":            \"PAID\",\n  \"taxType\":           \"CGST_SGST\",\n  \"totalAmount\":       59000.00,\n  \"placeOfSupply\":     \"27\",\n  \"razorpayOrderId\":   \"order_MOCK_abc123xyz\",\n  \"razorpayPaymentId\": \"pay_MOCK_xyz789\",\n  \"paidAt\":            \"2026-09-11T10:45:00Z\",\n  \"createdAt\":         \"2026-09-11T10:30:00Z\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "5. Razorpay Webhook (Simulate)",
+      "item": [
+        {
+          "name": "5.1 Simulate payment.captured",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type",         "value": "application/json" },
+              { "key": "X-Razorpay-Signature", "value": "skip-in-dev-webhook-secret-blank" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"event\": \"payment.captured\",\n  \"payload\": {\n    \"payment\": {\n      \"entity\": {\n        \"id\":       \"pay_MOCK_xyz789\",\n        \"order_id\": \"{{orderId}}\",\n        \"amount\":   5900000,\n        \"currency\": \"INR\",\n        \"status\":   \"captured\",\n        \"notes\": {\n          \"gstin\":           \"27ABCDE1234F1Z5\",\n          \"business_name\":   \"Dr. Ravi Kumar Clinic\",\n          \"tax_invoice_no\":  \"TI/2026-09/0001\",\n          \"payment_type\":    \"B2B_CORPORATE\"\n        }\n      }\n    }\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/billing/webhook/razorpay",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "billing", "webhook", "razorpay"]
+            },
+            "description": "Simulates a Razorpay payment.captured webhook. In dev mode (no webhook secret configured) the signature header is ignored. After this call, GET invoice/by-order/{{orderId}} should return status=PAID.\n\nNOTE: This endpoint is only active when spring.profiles.active=razorpay. In default/mock mode the webhook controller is not loaded."
+          },
+          "response": [
+            {
+              "name": "200 Confirmed",
+              "status": "OK",
+              "code": 200,
+              "body": "Invoice TI/2026-09/0001 marked PAID. Invoice dispatched."
+            }
+          ]
+        },
+        {
+          "name": "5.2 Simulate payment.failed",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type",         "value": "application/json" },
+              { "key": "X-Razorpay-Signature", "value": "skip-in-dev-webhook-secret-blank" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"event\": \"payment.failed\",\n  \"payload\": {\n    \"payment\": {\n      \"entity\": {\n        \"id\":       \"pay_MOCK_failed001\",\n        \"order_id\": \"{{orderId}}\",\n        \"status\":   \"failed\"\n      }\n    }\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/billing/webhook/razorpay",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "billing", "webhook", "razorpay"]
+            },
+            "description": "Simulates a payment failure. Invoice status changes to CANCELLED. The user should retry checkout."
+          },
+          "response": [
+            {
+              "name": "200 Cancelled",
+              "status": "OK",
+              "code": 200,
+              "body": "Invoice TI/2026-09/0001 marked CANCELLED."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "6. Admin",
+      "item": [
+        {
+          "name": "6.1 Download GSTR-1 CSV — September 2026",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{idToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/billing/gstr1/2026/9",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "billing", "gstr1", "2026", "9"]
+            },
+            "description": "Downloads a GSTR-1 compliant CSV for all PAID invoices in the given year/month. Sorted by Place of Supply (state code) for segregated filing. Use at month-end."
+          },
+          "response": [
+            {
+              "name": "200 CSV Download",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                { "key": "Content-Type",        "value": "text/csv" },
+                { "key": "Content-Disposition", "value": "attachment; filename=\"GSTR1_2026_09.csv\"" }
+              ],
+              "body": "InvoiceNumber,InvoiceDate,GSTIN,BusinessName,PlaceOfSupply,SAC,BaseAmount,TaxType,CGST,SGST,IGST,TotalAmount\nTI/2026-09/0001,2026-09-11,27ABCDE1234F1Z5,Dr. Ravi Kumar Clinic,27,997331,50000.00,CGST_SGST,4500.00,4500.00,0.00,59000.00"
+            }
+          ]
+        },
+        {
+          "name": "6.2 Assign Role to Existing User (fix 403)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type",  "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{idToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"role\": \"primary-investigator\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/users/%2B919845309137/role",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "admin", "users", "%2B919845309137", "role"]
+            },
+            "description": "Sets custom:role on a Cognito user via admin API — bypasses app-client write restrictions. Use this to fix 403 for users who signed up before the role field was introduced. The user must sign out and sign back in to get a fresh idToken.\n\nNote: + must be URL-encoded as %2B in the path."
+          },
+          "response": [
+            {
+              "name": "200 Role Assigned",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"username\":      \"+919845309137\",\n  \"role\":          \"primary-investigator\",\n  \"confirmed\":     true,\n  \"userStatus\":    \"CONFIRMED\",\n  \"enabled\":       true,\n  \"customEnabled\": \"yes\"\n}"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

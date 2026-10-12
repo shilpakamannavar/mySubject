@@ -3,9 +3,11 @@ package com.study.management.application;
 import com.study.management.domain.model.PatientVisit;
 import com.study.management.domain.model.PrimaryInvestigator;
 import com.study.management.domain.model.StudyEnrollment;
+import com.study.management.domain.model.StudyEntity;
 import com.study.management.domain.model.VisitStatus;
 import com.study.management.domain.model.exception.ResourceNotFoundException;
 import com.study.management.domain.port.in.VisitUseCase;
+import com.study.management.domain.port.out.ClinicalStudyPort;
 import com.study.management.domain.port.out.EnrollmentPort;
 import com.study.management.domain.port.out.InvestigatorPort;
 import com.study.management.domain.port.out.VisitPort;
@@ -23,13 +25,16 @@ public class VisitApplicationService implements VisitUseCase {
     private final VisitPort visitPort;
     private final EnrollmentPort enrollmentPort;
     private final InvestigatorPort investigatorPort;
+    private final ClinicalStudyPort studyPort;
 
     public VisitApplicationService(VisitPort visitPort,
                                     EnrollmentPort enrollmentPort,
-                                    InvestigatorPort investigatorPort) {
+                                    InvestigatorPort investigatorPort,
+                                    ClinicalStudyPort studyPort) {
         this.visitPort = visitPort;
         this.enrollmentPort = enrollmentPort;
         this.investigatorPort = investigatorPort;
+        this.studyPort = studyPort;
     }
 
     @Override
@@ -38,6 +43,14 @@ public class VisitApplicationService implements VisitUseCase {
         StudyEnrollment enrollment = enrollmentPort.findById(enrollmentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Enrollment", enrollmentId));
         return visitPort.findByEnrollmentOrdered(enrollment);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<PatientVisit> getStudySchedule(UUID studyId) {
+        StudyEntity study = studyPort.findById(studyId)
+                .orElseThrow(() -> new ResourceNotFoundException("Study", studyId));
+        return visitPort.findByStudyOrdered(study);
     }
 
     @Override

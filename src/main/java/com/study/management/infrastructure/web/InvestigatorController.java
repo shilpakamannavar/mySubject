@@ -8,16 +8,21 @@ import com.study.management.domain.model.PrimaryInvestigator;
 import com.study.management.domain.model.StudyEntity;
 import com.study.management.domain.port.in.InvestigatorUseCase;
 import com.study.management.domain.port.out.ClinicalStudyPort;
+import com.study.management.infrastructure.cognito.CognitoSyncService;
+import com.study.management.infrastructure.cognito.CognitoUserService;
 import com.study.management.infrastructure.web.dto.AssignPiToCenterRequest;
 import com.study.management.infrastructure.web.dto.AssignmentResponse;
+import com.study.management.infrastructure.web.dto.CognitoSyncReport;
 import com.study.management.infrastructure.web.dto.CreatePiRequest;
 import com.study.management.infrastructure.web.dto.PiDashboardResponse;
 import com.study.management.infrastructure.web.dto.PiResponse;
 import com.study.management.infrastructure.web.dto.StudyListItem;
+import com.study.management.infrastructure.web.dto.UserConfirmationResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -30,18 +35,44 @@ import java.util.stream.Collectors;
 public class InvestigatorController {
 
     private final InvestigatorUseCase investigatorUseCase;
-    private final ClinicalStudyPort studyPort;
+    private final ClinicalStudyPort   studyPort;
+    private final CognitoUserService  cognitoUserService;
+    private final CognitoSyncService  cognitoSyncService;
 
-    public InvestigatorController(InvestigatorUseCase investigatorUseCase, ClinicalStudyPort studyPort) {
+    public InvestigatorController(InvestigatorUseCase investigatorUseCase,
+                                   ClinicalStudyPort   studyPort,
+                                   CognitoUserService  cognitoUserService,
+                                   CognitoSyncService  cognitoSyncService) {
         this.investigatorUseCase = investigatorUseCase;
-        this.studyPort = studyPort;
+        this.studyPort           = studyPort;
+        this.cognitoUserService  = cognitoUserService;
+        this.cognitoSyncService  = cognitoSyncService;
+    }
+
+    @Operation(summary = "List all primary investigators")
+    @GetMapping
+    public ResponseEntity<List<PiResponse>> listAll() {
+        cognitoSyncService.syncGroupIntoDb("primary-investigator");
+        return ResponseEntity.ok(investigatorUseCase.listAll().stream()
+                .map(this::toResponse).collect(Collectors.toList()));
+    }
+
+    @Operation(
+        summary = "Sync primary investigators from Cognito (with report)",
+        description = "Fetches every member of the configured primary_investigator Cognito group, " +
+                      "creates missing DB records, and returns a per-user report showing " +
+                      "CREATED / SKIPPED (already exists) / ERROR (with reason) for each Cognito user."
+    )
+    @PostMapping("/sync")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<CognitoSyncReport> syncFromCognito() {
+        return ResponseEntity.ok(cognitoSyncService.syncSingleRole("primary-investigator"));
     }
 
     @Operation(summary = "Create a new primary investigator")
     @PostMapping
     public ResponseEntity<PiResponse> create(@RequestBody CreatePiRequest req) {
         PrimaryInvestigator pi = new PrimaryInvestigator();
-        pi.setPiNumber(req.getPiNumber());
         pi.setFirstName(req.getFirstName());
         pi.setLastName(req.getLastName());
         pi.setTitle(req.getTitle());
@@ -126,6 +157,9 @@ public class InvestigatorController {
         r.setStatus(pi.getStatus());
         r.setCreatedAt(pi.getCreatedAt());
         r.setUpdatedAt(pi.getUpdatedAt());
+        UserConfirmationResponse cognito = cognitoUserService.getConfirmationStatusSafe(pi.getPhone());
+        r.setConfirmed(cognito.isConfirmed());
+        r.setUserStatus(cognito.getUserStatus());
         return r;
     }
 
@@ -154,9 +188,8 @@ public class InvestigatorController {
         item.setStudyId(s.getStudyId());
         item.setStudyNumber(s.getStudyNumber());
         item.setStudyName(s.getStudyName());
-        item.setIndication(s.getIndication());
+        item.setTitle(s.getTitle());
         item.setPhase(s.getPhase());
-        item.setSponsorName(s.getSponsorName());
         item.setStatus(s.getStatus());
         item.setNoOfPatientsToEnroll(s.getNoOfPatientsToEnroll());
         item.setTotalCost(s.getTotalCost());

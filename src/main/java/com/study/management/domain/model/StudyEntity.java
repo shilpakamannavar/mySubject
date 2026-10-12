@@ -6,6 +6,7 @@ import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
+
 @Entity
 @Table(name = "studies")
 public class StudyEntity {
@@ -21,21 +22,18 @@ public class StudyEntity {
     @Column(name = "study_name")
     private String studyName;
 
-    @Column(name = "indication")
-    private String indication;
+    @Column(name = "title")
+    private String title;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "phase")
     private StudyPhase phase;
 
-    @Column(name = "protocol_number")
-    private String protocolNumber;
-
-    @Column(name = "sponsor_name")
-    private String sponsorName;
-
     @Column(name = "therapeutic_area")
     private String therapeuticArea;
+
+    @Column(name = "indication")
+    private String indication;
 
     @Column(name = "no_of_patients_to_enroll")
     private Integer noOfPatientsToEnroll;
@@ -43,17 +41,11 @@ public class StudyEntity {
     @Column(name = "total_number_of_visits")
     private Integer totalNumberOfVisits;
 
-    @Column(name = "date_first_patient_screening")
-    private LocalDate dateFirstPatientScreening;
-
     @Column(name = "date_first_patient_last_visit")
     private LocalDate dateFirstPatientLastVisit;
 
     @Column(name = "date_last_patient_first_visit")
     private LocalDate dateLastPatientFirstVisit;
-
-    @Column(name = "date_last_patient_last_visit")
-    private LocalDate dateLastPatientLastVisit;
 
     @Column(name = "calculated_rate_per_service", precision = 18, scale = 2)
     private BigDecimal calculatedRatePerService;
@@ -73,6 +65,10 @@ public class StudyEntity {
 
     @Column(name = "disabled_reason")
     private String disabledReason;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "trial_id")
+    private StudyTeam studyTeam;
 
     @ManyToOne
     @JoinColumn(name = "created_by_pi_id")
@@ -107,20 +103,17 @@ public class StudyEntity {
     public String getStudyName()                        { return studyName; }
     public void setStudyName(String v)                 { this.studyName = v; }
 
-    public String getIndication()                       { return indication; }
-    public void setIndication(String v)                { this.indication = v; }
+    public String getTitle()                            { return title; }
+    public void setTitle(String v)                     { this.title = v; }
 
     public StudyPhase getPhase()                        { return phase; }
     public void setPhase(StudyPhase phase)             { this.phase = phase; }
 
-    public String getProtocolNumber()                   { return protocolNumber; }
-    public void setProtocolNumber(String v)            { this.protocolNumber = v; }
-
-    public String getSponsorName()                      { return sponsorName; }
-    public void setSponsorName(String v)               { this.sponsorName = v; }
-
     public String getTherapeuticArea()                  { return therapeuticArea; }
     public void setTherapeuticArea(String v)           { this.therapeuticArea = v; }
+
+    public String getIndication()                       { return indication; }
+    public void setIndication(String v)                { this.indication = v; }
 
     public Integer getNoOfPatientsToEnroll()            { return noOfPatientsToEnroll; }
     public void setNoOfPatientsToEnroll(Integer v)     { this.noOfPatientsToEnroll = v; }
@@ -128,17 +121,11 @@ public class StudyEntity {
     public Integer getTotalNumberOfVisits()             { return totalNumberOfVisits; }
     public void setTotalNumberOfVisits(Integer v)      { this.totalNumberOfVisits = v; }
 
-    public LocalDate getDateFirstPatientScreening()     { return dateFirstPatientScreening; }
-    public void setDateFirstPatientScreening(LocalDate v) { this.dateFirstPatientScreening = v; }
-
     public LocalDate getDateFirstPatientLastVisit()     { return dateFirstPatientLastVisit; }
     public void setDateFirstPatientLastVisit(LocalDate v) { this.dateFirstPatientLastVisit = v; }
 
     public LocalDate getDateLastPatientFirstVisit()     { return dateLastPatientFirstVisit; }
     public void setDateLastPatientFirstVisit(LocalDate v) { this.dateLastPatientFirstVisit = v; }
-
-    public LocalDate getDateLastPatientLastVisit()      { return dateLastPatientLastVisit; }
-    public void setDateLastPatientLastVisit(LocalDate v) { this.dateLastPatientLastVisit = v; }
 
     public BigDecimal getCalculatedRatePerService()     { return calculatedRatePerService; }
     public void setCalculatedRatePerService(BigDecimal v) { this.calculatedRatePerService = v; }
@@ -157,6 +144,9 @@ public class StudyEntity {
 
     public String getDisabledReason()                   { return disabledReason; }
     public void setDisabledReason(String v)            { this.disabledReason = v; }
+
+    public StudyTeam getStudyTeam()                      { return studyTeam; }
+    public void setStudyTeam(StudyTeam v)               { this.studyTeam = v; }
 
     public PrimaryInvestigator getCreatedByPi()         { return createdByPi; }
     public void setCreatedByPi(PrimaryInvestigator v)  { this.createdByPi = v; }

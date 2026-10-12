@@ -17,6 +17,7 @@ public interface EnrollmentPort {
     Optional<StudyEnrollment> findById(UUID enrollmentId);
     boolean existsByStudyAndPatient(StudyEntity study, PatientEntity patient);
     Page<StudyEnrollment> findByStudy(StudyEntity study, Pageable pageable);
+    List<StudyEnrollment> findByPatient(PatientEntity patient);
     PatientVisit saveVisit(PatientVisit visit);
     List<PatientVisit> findVisitsByEnrollment(StudyEnrollment enrollment);
     List<PatientVisit> findVisitsByEnrollmentAndStatusIn(StudyEnrollment enrollment, List<VisitStatus> statuses);

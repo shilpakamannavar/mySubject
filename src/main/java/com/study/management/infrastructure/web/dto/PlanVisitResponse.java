@@ -1,6 +1,7 @@
 package com.study.management.infrastructure.web.dto;
 
 import com.study.management.domain.model.ClinicalVisitType;
+import com.study.management.domain.model.DurationUnit;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
@@ -14,6 +15,8 @@ public class PlanVisitResponse {
     private String visitName;
     private ClinicalVisitType visitType;
     private String typeOfVisitOrDose;
+    private Integer durationValue;
+    private DurationUnit durationUnit;
     private Integer durationDays;
     private String durationDisplay;
     private Integer windowPeriodBefore;
@@ -23,6 +26,7 @@ public class PlanVisitResponse {
     private Integer targetDayOffset;
     private Boolean isMandatory;
     private Boolean requiresFasting;
+    private String patientInstruction;
     private String procedures;
     private BigDecimal visitCost;
     private Integer sortOrder;
@@ -41,6 +45,10 @@ public class PlanVisitResponse {
     public void setVisitType(ClinicalVisitType v)      { this.visitType = v; }
     public String getTypeOfVisitOrDose()                { return typeOfVisitOrDose; }
     public void setTypeOfVisitOrDose(String v)         { this.typeOfVisitOrDose = v; }
+    public Integer getDurationValue()                   { return durationValue; }
+    public void setDurationValue(Integer v)            { this.durationValue = v; }
+    public DurationUnit getDurationUnit()               { return durationUnit; }
+    public void setDurationUnit(DurationUnit v)        { this.durationUnit = v; }
     public Integer getDurationDays()                    { return durationDays; }
     public void setDurationDays(Integer v)             { this.durationDays = v; }
     public String getDurationDisplay()                  { return durationDisplay; }
@@ -59,6 +67,8 @@ public class PlanVisitResponse {
     public void setIsMandatory(Boolean v)              { this.isMandatory = v; }
     public Boolean getRequiresFasting()                 { return requiresFasting; }
     public void setRequiresFasting(Boolean v)          { this.requiresFasting = v; }
+    public String getPatientInstruction()               { return patientInstruction; }
+    public void setPatientInstruction(String v)        { this.patientInstruction = v; }
     public String getProcedures()                       { return procedures; }
     public void setProcedures(String v)                { this.procedures = v; }
     public BigDecimal getVisitCost()                    { return visitCost; }

@@ -12,6 +12,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.stream.Collectors;
@@ -27,6 +28,7 @@ public class PatientController {
         this.patientUseCase = patientUseCase;
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'CRC', 'CO_INVESTIGATOR')")
     @Operation(summary = "Create a new patient")
     @PostMapping
     public ResponseEntity<PatientResponse> create(@RequestBody CreatePatientRequest req) {

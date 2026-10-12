@@ -21,7 +21,7 @@ public class PromoCodeUsageLog {
     private String promoCode;
 
     // FK; nullable because pre-customer studies have no customer association
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "customer_id")
     private Customer customer;
 

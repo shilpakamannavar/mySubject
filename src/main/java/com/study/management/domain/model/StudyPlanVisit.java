@@ -31,6 +31,13 @@ public class StudyPlanVisit {
     @Column(name = "type_of_visit_or_dose")
     private String typeOfVisitOrDose;
 
+    @Column(name = "duration_value")
+    private Integer durationValue;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "duration_unit")
+    private DurationUnit durationUnit;
+
     @Column(name = "duration_days")
     private Integer durationDays;
 
@@ -62,10 +69,13 @@ public class StudyPlanVisit {
     @Column(name = "procedures")
     private String procedures;
 
+    @Column(name = "patient_instruction", length = 2000)
+    private String patientInstruction;
+
     @Column(name = "visit_cost", precision = 18, scale = 2)
     private BigDecimal visitCost;
 
-    @Column(name = "sort_order")
+    @Column(name = "sort_order", nullable = false)
     private Integer sortOrder;
 
     @Column(name = "created_at")
@@ -105,6 +115,12 @@ public class StudyPlanVisit {
     public String getTypeOfVisitOrDose()                { return typeOfVisitOrDose; }
     public void setTypeOfVisitOrDose(String v)         { this.typeOfVisitOrDose = v; }
 
+    public Integer getDurationValue()                   { return durationValue; }
+    public void setDurationValue(Integer v)            { this.durationValue = v; }
+
+    public DurationUnit getDurationUnit()               { return durationUnit; }
+    public void setDurationUnit(DurationUnit v)        { this.durationUnit = v; }
+
     public Integer getDurationDays()                    { return durationDays; }
     public void setDurationDays(Integer v)             { this.durationDays = v; }
 
@@ -134,6 +150,9 @@ public class StudyPlanVisit {
 
     public String getProcedures()                       { return procedures; }
     public void setProcedures(String v)                { this.procedures = v; }
+
+    public String getPatientInstruction()               { return patientInstruction; }
+    public void setPatientInstruction(String v)        { this.patientInstruction = v; }
 
     public BigDecimal getVisitCost()                    { return visitCost; }
     public void setVisitCost(BigDecimal v)             { this.visitCost = v; }

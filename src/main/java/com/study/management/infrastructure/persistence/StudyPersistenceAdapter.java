@@ -28,4 +28,5 @@ public class StudyPersistenceAdapter implements StudyPort {
     @Override public List<Study>     findAll()                                      { return jpa.findAll(); }
     @Override public Study           save(Study study)                              { return jpa.save(study); }
     @Override public boolean         existsByStudyId(String sid)                    { return jpa.existsByStudyId(sid); }
+    @Override public List<Study>     findByCreatedByPhone(String phone)             { return jpa.findByCreatedByPhone(phone); }
 }

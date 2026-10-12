@@ -2,7 +2,6 @@ package com.study.management.infrastructure.web.dto;
 
 public class CreatePiRequest {
 
-    private String piNumber;
     private String firstName;
     private String lastName;
     private String title;
@@ -15,8 +14,6 @@ public class CreatePiRequest {
     private String licenseState;
     private String cvDocumentUrl;
 
-    public String getPiNumber()                 { return piNumber; }
-    public void setPiNumber(String v)          { this.piNumber = v; }
     public String getFirstName()                { return firstName; }
     public void setFirstName(String v)         { this.firstName = v; }
     public String getLastName()                 { return lastName; }

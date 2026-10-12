@@ -23,6 +23,8 @@ public class PiResponse {
     private PiStatus status;
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
+    private boolean confirmed;
+    private String userStatus;
 
     public UUID getPiId()                       { return piId; }
     public void setPiId(UUID v)                { this.piId = v; }
@@ -56,4 +58,8 @@ public class PiResponse {
     public void setCreatedAt(OffsetDateTime v) { this.createdAt = v; }
     public OffsetDateTime getUpdatedAt()        { return updatedAt; }
     public void setUpdatedAt(OffsetDateTime v) { this.updatedAt = v; }
+    public boolean isConfirmed()               { return confirmed; }
+    public void setConfirmed(boolean v)        { this.confirmed = v; }
+    public String getUserStatus()              { return userStatus; }
+    public void setUserStatus(String v)        { this.userStatus = v; }
 }

@@ -18,4 +18,6 @@ interface JpaClinicalStudyRepository extends JpaRepository<StudyEntity, UUID> {
     List<StudyEntity> findByStatus(ClinicalStudyStatus status);
     Optional<StudyEntity> findByStudyNumber(String studyNumber);
     boolean existsByStudyNumber(String studyNumber);
+    boolean existsByStudyName(String studyName);
+    List<StudyEntity> findByStudyTeam_TrialIdIn(List<UUID> teamIds);
 }

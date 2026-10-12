@@ -39,6 +39,9 @@ public class EnrollmentPersistenceAdapter implements EnrollmentPort {
     @Override public List<PatientVisit> findVisitsByEnrollment(StudyEnrollment e) {
         return visitJpa.findByEnrollmentOrderByPlanVisit_VisitNumber(e);
     }
+    @Override public List<StudyEnrollment> findByPatient(PatientEntity p) {
+        return enrollJpa.findByPatient(p);
+    }
     @Override public List<PatientVisit> findVisitsByEnrollmentAndStatusIn(StudyEnrollment e, List<VisitStatus> statuses) {
         return visitJpa.findByEnrollment(e).stream()
                 .filter(v -> statuses.contains(v.getVisitStatus()))

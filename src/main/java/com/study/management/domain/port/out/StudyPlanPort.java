@@ -7,6 +7,7 @@ import java.util.List;
 
 public interface StudyPlanPort {
     void deleteByStudy(StudyEntity study);
+    void flush();
     StudyPlanVisit save(StudyPlanVisit visit);
     List<StudyPlanVisit> findByStudyOrdered(StudyEntity study);
 }

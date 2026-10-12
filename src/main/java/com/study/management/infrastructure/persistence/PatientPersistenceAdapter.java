@@ -19,9 +19,11 @@ public class PatientPersistenceAdapter implements PatientPort {
         this.jpa = jpa;
     }
 
-    @Override public PatientEntity save(PatientEntity p)            { return jpa.save(p); }
-    @Override public Optional<PatientEntity> findById(UUID id)      { return jpa.findById(id); }
-    @Override public long countByNumberPrefix(String prefix)        { return jpa.countByPatientNumberStartingWith(prefix); }
+    @Override public PatientEntity save(PatientEntity p)                        { return jpa.save(p); }
+    @Override public Optional<PatientEntity> findById(UUID id)                  { return jpa.findById(id); }
+    @Override public long countByNumberPrefix(String prefix)                    { return jpa.countByPatientNumberStartingWith(prefix); }
+    @Override public Optional<PatientEntity> findByPhone(String phone)          { return jpa.findByPhone(phone); }
+    @Override public Optional<PatientEntity> findByEmail(String email)          { return jpa.findByEmailIgnoreCase(email); }
     @Override public Page<PatientEntity> search(String search, PatientStatus status, Pageable pageable) {
         return jpa.searchPatients(search, status, pageable);
     }

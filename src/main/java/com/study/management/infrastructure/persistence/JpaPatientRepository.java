@@ -13,6 +13,8 @@ import java.util.UUID;
 
 interface JpaPatientRepository extends JpaRepository<PatientEntity, UUID> {
     Optional<PatientEntity> findByPatientNumber(String patientNumber);
+    Optional<PatientEntity> findByPhone(String phone);
+    Optional<PatientEntity> findByEmailIgnoreCase(String email);
     Page<PatientEntity> findByStatus(PatientStatus status, Pageable pageable);
     long countByPatientNumberStartingWith(String prefix);
 

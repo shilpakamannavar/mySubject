@@ -13,4 +13,6 @@ public interface PatientPort {
     Optional<PatientEntity> findById(UUID patientId);
     long countByNumberPrefix(String prefix);
     Page<PatientEntity> search(String search, PatientStatus status, Pageable pageable);
+    Optional<PatientEntity> findByPhone(String phone);
+    Optional<PatientEntity> findByEmail(String email);
 }

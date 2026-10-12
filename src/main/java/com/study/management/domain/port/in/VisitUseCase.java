@@ -8,6 +8,7 @@ import java.util.UUID;
 
 public interface VisitUseCase {
     List<PatientVisit> getVisitSchedule(UUID enrollmentId);
+    List<PatientVisit> getStudySchedule(UUID studyId);
     PatientVisit completeVisit(UUID visitId, PatientVisit updates);
     PatientVisit markMissed(UUID visitId);
     PatientVisit reschedule(UUID visitId, LocalDate newDate);

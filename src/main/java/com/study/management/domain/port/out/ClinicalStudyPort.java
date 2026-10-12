@@ -12,9 +12,12 @@ import java.util.UUID;
 public interface ClinicalStudyPort {
     StudyEntity save(StudyEntity study);
     Optional<StudyEntity> findById(UUID studyId);
+    List<StudyEntity> findAll();
     boolean existsByStudyNumber(String studyNumber);
+    boolean existsByStudyName(String studyName);
     List<StudyEntity> findByPi(PrimaryInvestigator pi);
     List<StudyEntity> findByPiAndStatus(PrimaryInvestigator pi, ClinicalStudyStatus status);
+    List<StudyEntity> findByTeamIds(List<UUID> teamIds);
     StudySiteAssignment saveSiteAssignment(StudySiteAssignment assignment);
     List<StudySiteAssignment> findSitesByStudy(StudyEntity study);
 }

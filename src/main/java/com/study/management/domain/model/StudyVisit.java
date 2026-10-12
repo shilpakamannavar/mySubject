@@ -34,7 +34,7 @@ public class StudyVisit {
     @Column(length = 1000)
     private String patientInstructions;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "study_id", nullable = false)
     @JsonBackReference("study-visits")
     private Study study;

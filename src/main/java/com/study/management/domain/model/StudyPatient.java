@@ -31,7 +31,7 @@ public class StudyPatient {
     @Column(name = "status")
     private PatientStatus status;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "study_id", nullable = false)
     private Study study;
 

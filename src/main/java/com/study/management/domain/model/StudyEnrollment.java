@@ -14,6 +14,10 @@ public class StudyEnrollment {
     @Column(name = "enrollment_id")
     private UUID enrollmentId;
 
+    /** Not persisted — carries subjectId from the controller so the service can auto-resolve the patient. */
+    @Transient
+    private UUID subjectId;
+
     @ManyToOne
     @JoinColumn(name = "study_id")
     private StudyEntity study;
@@ -82,6 +86,9 @@ public class StudyEnrollment {
     }
 
     // ── Getters & Setters ──────────────────────────────────────────────
+
+    public UUID getSubjectId()                          { return subjectId; }
+    public void setSubjectId(UUID v)                   { this.subjectId = v; }
 
     public UUID getEnrollmentId()                       { return enrollmentId; }
     public void setEnrollmentId(UUID v)                { this.enrollmentId = v; }

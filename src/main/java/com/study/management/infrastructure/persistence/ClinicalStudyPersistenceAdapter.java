@@ -25,10 +25,15 @@ public class ClinicalStudyPersistenceAdapter implements ClinicalStudyPort {
 
     @Override public StudyEntity save(StudyEntity s)                          { return studyJpa.save(s); }
     @Override public Optional<StudyEntity> findById(UUID id)                  { return studyJpa.findById(id); }
+    @Override public List<StudyEntity> findAll()                              { return studyJpa.findAll(); }
     @Override public boolean existsByStudyNumber(String n)                    { return studyJpa.existsByStudyNumber(n); }
+    @Override public boolean existsByStudyName(String n)                      { return studyJpa.existsByStudyName(n); }
     @Override public List<StudyEntity> findByPi(PrimaryInvestigator pi)       { return studyJpa.findByCreatedByPi(pi); }
     @Override public List<StudyEntity> findByPiAndStatus(PrimaryInvestigator pi, ClinicalStudyStatus s) {
         return studyJpa.findByCreatedByPiAndStatus(pi, s, org.springframework.data.domain.Pageable.unpaged()).getContent();
+    }
+    @Override public List<StudyEntity> findByTeamIds(List<UUID> teamIds) {
+        return teamIds.isEmpty() ? List.of() : studyJpa.findByStudyTeam_TrialIdIn(teamIds);
     }
     @Override public StudySiteAssignment saveSiteAssignment(StudySiteAssignment a) { return siteJpa.save(a); }
     @Override public List<StudySiteAssignment> findSitesByStudy(StudyEntity s) { return siteJpa.findByStudy(s); }

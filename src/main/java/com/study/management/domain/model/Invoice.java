@@ -38,7 +38,7 @@ public class Invoice {
     @Enumerated(EnumType.STRING)
     private PaymentStatus status;
 
-    @OneToOne(fetch = FetchType.LAZY)
+    @OneToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "study_id", nullable = false)
     @JsonBackReference("study-invoice")
     private Study study;

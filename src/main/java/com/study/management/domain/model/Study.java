@@ -27,26 +27,23 @@ public class Study {
     @Column(unique = true)
     private String studyId;
 
-    @NotBlank
-    private String indication;
+    private String title;
 
     @NotNull
     @Min(1)
     private Integer numberOfPatients;
 
-    private LocalDate firstPatientScreeningDate;
-    private LocalDate lastPatientVisitDate;
-
     @NotNull
     @Min(1)
     private Integer totalVisitsPerPatient;
 
-    private String principalInvestigatorName;
+    @Column(name = "created_by_phone")
+    private String createdByPhone;
 
     @Enumerated(EnumType.STRING)
     private StudyStatus status;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "customer_id")
     @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
     private Customer customer;
@@ -67,23 +64,17 @@ public class Study {
     public String getStudyId()                   { return studyId; }
     public void setStudyId(String studyId)       { this.studyId = studyId; }
 
-    public String getIndication()                { return indication; }
-    public void setIndication(String indication) { this.indication = indication; }
+    public String getTitle()                     { return title; }
+    public void setTitle(String title)           { this.title = title; }
 
     public Integer getNumberOfPatients()                        { return numberOfPatients; }
     public void setNumberOfPatients(Integer numberOfPatients)   { this.numberOfPatients = numberOfPatients; }
 
-    public LocalDate getFirstPatientScreeningDate()                              { return firstPatientScreeningDate; }
-    public void setFirstPatientScreeningDate(LocalDate firstPatientScreeningDate){ this.firstPatientScreeningDate = firstPatientScreeningDate; }
-
-    public LocalDate getLastPatientVisitDate()                          { return lastPatientVisitDate; }
-    public void setLastPatientVisitDate(LocalDate lastPatientVisitDate) { this.lastPatientVisitDate = lastPatientVisitDate; }
-
     public Integer getTotalVisitsPerPatient()                          { return totalVisitsPerPatient; }
     public void setTotalVisitsPerPatient(Integer totalVisitsPerPatient){ this.totalVisitsPerPatient = totalVisitsPerPatient; }
 
-    public String getPrincipalInvestigatorName()                    { return principalInvestigatorName; }
-    public void setPrincipalInvestigatorName(String v)             { this.principalInvestigatorName = v; }
+    public String getCreatedByPhone()                              { return createdByPhone; }
+    public void setCreatedByPhone(String phone)                    { this.createdByPhone = phone; }
 
     public StudyStatus getStatus()               { return status; }
     public void setStatus(StudyStatus status)    { this.status = status; }

@@ -108,6 +108,12 @@ public class StudyApplicationService implements StudyUseCase {
 
     @Override
     @Transactional(readOnly = true)
+    public List<Study> getStudiesByPiPhone(String phone) {
+        return studyPort.findByCreatedByPhone(phone);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<Study> getAllStudies() {
         return studyPort.findAll();
     }

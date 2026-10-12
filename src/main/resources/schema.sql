@@ -88,8 +88,8 @@ CREATE TABLE IF NOT EXISTS primary_investigators (
     title               VARCHAR(20),
     credentials         VARCHAR(50),
     specialty           VARCHAR(100),
-    email               VARCHAR(200)             NOT NULL,
-    phone               VARCHAR(30),
+    email               VARCHAR(200),
+    phone               VARCHAR(30)              UNIQUE,
     npi_number          VARCHAR(20),
     license_number      VARCHAR(50),
     license_state       VARCHAR(30),
@@ -102,6 +102,7 @@ CREATE TABLE IF NOT EXISTS primary_investigators (
 
 CREATE INDEX IF NOT EXISTS idx_pi_status ON primary_investigators(status);
 CREATE INDEX IF NOT EXISTS idx_pi_name   ON primary_investigators(last_name, first_name);
+CREATE INDEX IF NOT EXISTS idx_pi_phone  ON primary_investigators(phone);
 
 
 -- ┌─────────────────────────────────────────────────────────────────┐
@@ -138,18 +139,14 @@ CREATE TABLE IF NOT EXISTS studies (
     study_id                         UUID                     DEFAULT RANDOM_UUID() PRIMARY KEY,
     study_number                     VARCHAR(50)              NOT NULL UNIQUE,
     study_name                       VARCHAR(300)             NOT NULL,
-    indication                       VARCHAR(200)             NOT NULL,
+    title                            VARCHAR(300),
     phase                            VARCHAR(20)
                                      CHECK (phase IN ('PHASE_I','PHASE_II','PHASE_III','PHASE_IV','OBSERVATIONAL')),
-    protocol_number                  VARCHAR(100),
-    sponsor_name                     VARCHAR(200),
     therapeutic_area                 VARCHAR(100),
     no_of_patients_to_enroll         INTEGER                  NOT NULL DEFAULT 0,
     total_number_of_visits           INTEGER                  NOT NULL DEFAULT 0,
-    date_first_patient_screening     DATE,
     date_first_patient_last_visit    DATE,
     date_last_patient_first_visit    DATE,
-    date_last_patient_last_visit     DATE,
     calculated_rate_per_service      DECIMAL(12,2),
     total_cost                       DECIMAL(12,2),
     status                           VARCHAR(20)              NOT NULL DEFAULT 'INACTIVE'
@@ -165,9 +162,9 @@ CREATE TABLE IF NOT EXISTS studies (
     updated_at                       TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE UNIQUE INDEX IF NOT EXISTS uq_study_name ON studies(study_name);
 CREATE INDEX IF NOT EXISTS idx_study_status     ON studies(status);
 CREATE INDEX IF NOT EXISTS idx_study_pi         ON studies(created_by_pi_id);
-CREATE INDEX IF NOT EXISTS idx_study_indication ON studies(indication);
 
 
 -- ┌─────────────────────────────────────────────────────────────────┐
@@ -209,7 +206,7 @@ CREATE TABLE IF NOT EXISTS study_plan_visits (
     visit_name                       VARCHAR(100)             NOT NULL,
     visit_type                       VARCHAR(30)              NOT NULL
                                      CHECK (visit_type IN (
-                                         'SCREENING','BASELINE','TREATMENT','FOLLOW_UP',
+                                         'SCREENING','BASELINE','RANDOMIZATION','TREATMENT','FOLLOW_UP',
                                          'END_OF_STUDY','UNSCHEDULED','EARLY_TERMINATION'
                                      )),
     type_of_visit_or_dose            VARCHAR(100),
@@ -270,7 +267,7 @@ CREATE TABLE IF NOT EXISTS study_enrollments (
     enrollment_id        UUID                     DEFAULT RANDOM_UUID() PRIMARY KEY,
     study_id             UUID                     NOT NULL REFERENCES studies(study_id),
     patient_id           UUID                     NOT NULL REFERENCES patients(patient_id),
-    study_site_id        UUID                     NOT NULL REFERENCES study_site_assignments(study_site_id),
+    study_site_id        UUID                     REFERENCES study_site_assignments(study_site_id),
     subject_number       VARCHAR(30),
     screening_date       DATE,
     enrollment_date      DATE,
@@ -279,7 +276,7 @@ CREATE TABLE IF NOT EXISTS study_enrollments (
     completion_date      DATE,
     withdrawal_date      DATE,
     withdrawal_reason    TEXT,
-    informed_consent_date DATE                   NOT NULL,
+    informed_consent_date DATE,
     consent_version      VARCHAR(20),
     consent_document_url VARCHAR(500),
     enrollment_status    VARCHAR(25)              NOT NULL DEFAULT 'SCREENING'
@@ -477,13 +474,12 @@ SELECT
     s.study_id,
     s.study_number,
     s.study_name,
-    s.indication,
+    s.title,
     s.phase,
     s.status                          AS study_status,
     s.no_of_patients_to_enroll,
     s.total_number_of_visits,
-    s.date_first_patient_screening,
-    s.date_last_patient_last_visit    AS date_first_patient_last_visit,
+    s.date_first_patient_last_visit,
     s.calculated_rate_per_service,
     s.total_cost,
     s.created_by_pi_id,
@@ -656,12 +652,10 @@ CREATE TABLE IF NOT EXISTS customer (
 CREATE TABLE IF NOT EXISTS study (
     id                              BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
     study_id                        VARCHAR(255) NOT NULL UNIQUE,
-    indication                      VARCHAR(255) NOT NULL,
+    title                           VARCHAR(300),
     number_of_patients              INTEGER      NOT NULL,
-    first_patient_screening_date    DATE,
-    last_patient_visit_date         DATE,
     total_visits_per_patient        INTEGER      NOT NULL,
-    principal_investigator_name     VARCHAR(255),
+    created_by_phone                VARCHAR(30),
     status                          VARCHAR(30)  CHECK (status IN
                                         ('DRAFT','INACTIVE','PAYMENT_PENDING','ACTIVE','DISABLED')),
     customer_id                     BIGINT REFERENCES customer(id)
@@ -733,3 +727,366 @@ CREATE TABLE IF NOT EXISTS promo_code_usage_log (
     discount_amount     DECIMAL(10,2) NOT NULL,
     used_at             TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+
+-- ┌─────────────────────────────────────────────────────────────────┐
+-- │ 15. PATIENT STUDY LOG                                           │
+-- │     Auto-generated per-visit tracking grid (CRC dashboard).    │
+-- │     One row per visit per enrolled patient. Rule C: isReadOnly  │
+-- │     is set to TRUE when the linked study is DISABLED.           │
+-- └─────────────────────────────────────────────────────────────────┘
+
+CREATE TABLE IF NOT EXISTS patient_study_log (
+    log_id                      VARCHAR(50)              NOT NULL PRIMARY KEY,
+    patient_number              VARCHAR(20)              NOT NULL,
+    enrollment_id               UUID                     NOT NULL
+                                REFERENCES study_enrollments(enrollment_id),
+    study_id                    UUID                     NOT NULL
+                                REFERENCES studies(study_id),
+    plan_visit_id               UUID
+                                REFERENCES study_plan_visits(plan_visit_id),
+    visit_number                INTEGER                  NOT NULL,
+    visit_type                  VARCHAR(50),
+    target_scheduled_date       DATE,
+    window_open_date            DATE,
+    window_close_date           DATE,
+    actual_visit_date           DATE,
+    visit_specific_instructions TEXT,
+    visit_status                VARCHAR(20)              NOT NULL DEFAULT 'SCHEDULED'
+                                CHECK (visit_status IN (
+                                    'SCHEDULED','WINDOW_OPEN','COMPLETED','MISSED','OUT_OF_WINDOW'
+                                )),
+    is_read_only                BOOLEAN                  NOT NULL DEFAULT FALSE,
+    created_at                  TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at                  TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_psl_enrollment ON patient_study_log(enrollment_id);
+CREATE INDEX IF NOT EXISTS idx_psl_study       ON patient_study_log(study_id);
+CREATE INDEX IF NOT EXISTS idx_psl_patient     ON patient_study_log(patient_number);
+
+
+-- ┌─────────────────────────────────────────────────────────────────┐
+-- │ STUDY TEAMS                                                     │
+-- └─────────────────────────────────────────────────────────────────┘
+
+CREATE TABLE IF NOT EXISTS study_teams (
+    trial_id             UUID                     DEFAULT RANDOM_UUID() PRIMARY KEY,
+    study_name           VARCHAR(300)             NOT NULL,
+    pi_id                UUID                     NOT NULL REFERENCES primary_investigators(pi_id),
+    created_by_user_id   VARCHAR(200)             NOT NULL,
+    created_by_role      VARCHAR(50)              NOT NULL,
+    created_at           TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at           TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_study_teams_pi ON study_teams(pi_id);
+
+CREATE TABLE IF NOT EXISTS study_team_members (
+    member_id           UUID                     DEFAULT RANDOM_UUID() PRIMARY KEY,
+    trial_id            UUID                     NOT NULL REFERENCES study_teams(trial_id) ON DELETE CASCADE,
+    user_id             VARCHAR(200)             NOT NULL,
+    member_name         VARCHAR(300),
+    email               VARCHAR(200),
+    phone               VARCHAR(50),
+    role                VARCHAR(30)              NOT NULL
+                        CHECK (role IN ('CO_INVESTIGATOR','CRC','CRO','HOSPITAL')),
+    co_investigator_id          UUID,
+    crc_id                      UUID,
+    cro_id                      UUID,
+    hospital_id                 UUID,
+    can_create_study            BOOLEAN                  NOT NULL DEFAULT FALSE,
+    study_creation_granted_at   TIMESTAMP WITH TIME ZONE,
+    study_creation_granted_by   VARCHAR(200),
+    created_at                  TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_team_members_trial ON study_team_members(trial_id);
+CREATE INDEX IF NOT EXISTS idx_team_members_role  ON study_team_members(role);
+CREATE INDEX IF NOT EXISTS idx_psl_status      ON patient_study_log(visit_status);
+
+
+-- ══════════════════════════════════════════════════════════════════════
+-- COGNITO-SYNCED ROLE TABLES
+-- ══════════════════════════════════════════════════════════════════════
+
+CREATE TABLE IF NOT EXISTS co_investigators (
+    co_investigator_id   UUID                     DEFAULT RANDOM_UUID() PRIMARY KEY,
+    ci_number            VARCHAR(50),
+    first_name           VARCHAR(100),
+    last_name            VARCHAR(100),
+    title                VARCHAR(20),
+    credentials          VARCHAR(100),
+    specialty            VARCHAR(100),
+    email                VARCHAR(200)             UNIQUE,
+    phone                VARCHAR(50),
+    npi_number           VARCHAR(50),
+    license_number       VARCHAR(50),
+    license_state        VARCHAR(50),
+    cv_document_url      VARCHAR(500),
+    status               VARCHAR(20)              NOT NULL DEFAULT 'ACTIVE'
+                         CHECK (status IN ('ACTIVE','INACTIVE','SUSPENDED')),
+    created_at           TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at           TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_co_inv_email  ON co_investigators(email);
+CREATE INDEX IF NOT EXISTS idx_co_inv_phone  ON co_investigators(phone);
+CREATE INDEX IF NOT EXISTS idx_co_inv_status ON co_investigators(status);
+
+
+CREATE TABLE IF NOT EXISTS clinical_research_coordinators (
+    crc_id               UUID                     DEFAULT RANDOM_UUID() PRIMARY KEY,
+    crc_number           VARCHAR(50),
+    first_name           VARCHAR(100),
+    last_name            VARCHAR(100),
+    title                VARCHAR(20),
+    credentials          VARCHAR(100),
+    email                VARCHAR(200)             UNIQUE,
+    phone                VARCHAR(50),
+    certification_number VARCHAR(50),
+    status               VARCHAR(20)              NOT NULL DEFAULT 'ACTIVE'
+                         CHECK (status IN ('ACTIVE','INACTIVE','SUSPENDED')),
+    created_at           TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at           TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_crc_email  ON clinical_research_coordinators(email);
+CREATE INDEX IF NOT EXISTS idx_crc_phone  ON clinical_research_coordinators(phone);
+CREATE INDEX IF NOT EXISTS idx_crc_status ON clinical_research_coordinators(status);
+
+
+CREATE TABLE IF NOT EXISTS contract_research_organizations (
+    cro_id               UUID                     DEFAULT RANDOM_UUID() PRIMARY KEY,
+    cro_number           VARCHAR(50),
+    organization_name    VARCHAR(200),
+    contact_person       VARCHAR(200),
+    email                VARCHAR(200)             UNIQUE,
+    phone                VARCHAR(50),
+    address              VARCHAR(500),
+    registration_number  VARCHAR(100),
+    status               VARCHAR(20)              NOT NULL DEFAULT 'ACTIVE'
+                         CHECK (status IN ('ACTIVE','INACTIVE','SUSPENDED')),
+    created_at           TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at           TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_cro_email  ON contract_research_organizations(email);
+CREATE INDEX IF NOT EXISTS idx_cro_phone  ON contract_research_organizations(phone);
+CREATE INDEX IF NOT EXISTS idx_cro_status ON contract_research_organizations(status);
+
+
+CREATE TABLE IF NOT EXISTS hospitals (
+    hospital_id          UUID                     DEFAULT RANDOM_UUID() PRIMARY KEY,
+    hospital_number      VARCHAR(50),
+    hospital_name        VARCHAR(200),
+    contact_person       VARCHAR(200),
+    email                VARCHAR(200)             UNIQUE,
+    phone                VARCHAR(50),
+    address              VARCHAR(500),
+    registration_number  VARCHAR(100),
+    status               VARCHAR(20)              NOT NULL DEFAULT 'ACTIVE'
+                         CHECK (status IN ('ACTIVE','INACTIVE','SUSPENDED')),
+    created_at           TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at           TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_hospitals_email  ON hospitals(email);
+CREATE INDEX IF NOT EXISTS idx_hospitals_phone  ON hospitals(phone);
+CREATE INDEX IF NOT EXISTS idx_hospitals_status ON hospitals(status);
+
+
+CREATE TABLE IF NOT EXISTS subjects (
+    subject_id           UUID                     DEFAULT RANDOM_UUID() PRIMARY KEY,
+    subject_number       VARCHAR(50),
+    first_name           VARCHAR(100),
+    last_name            VARCHAR(100),
+    initials             VARCHAR(10),
+    date_of_birth        DATE,
+    gender               VARCHAR(20),
+    email                VARCHAR(200)             UNIQUE,
+    phone                VARCHAR(50),
+    status               VARCHAR(20)              NOT NULL DEFAULT 'ACTIVE'
+                         CHECK (status IN ('ACTIVE','INACTIVE','SUSPENDED','WITHDRAWN')),
+    created_at           TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at           TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_subjects_email  ON subjects(email);
+CREATE INDEX IF NOT EXISTS idx_subjects_status ON subjects(status);
+
+-- Subject QR-based activation columns (added via ALTER so no-op on fresh schemas that already have them)
+ALTER TABLE subjects ADD COLUMN IF NOT EXISTS activation_status   VARCHAR(20)              NOT NULL DEFAULT 'INACTIVE';
+ALTER TABLE subjects ADD COLUMN IF NOT EXISTS qr_token            VARCHAR(100)             UNIQUE;
+ALTER TABLE subjects ADD COLUMN IF NOT EXISTS qr_token_expires_at TIMESTAMP WITH TIME ZONE;
+ALTER TABLE subjects ADD COLUMN IF NOT EXISTS activated_at        TIMESTAMP WITH TIME ZONE;
+ALTER TABLE subjects ADD COLUMN IF NOT EXISTS activated_by        VARCHAR(100);
+ALTER TABLE subjects ADD COLUMN IF NOT EXISTS deactivated_at      TIMESTAMP WITH TIME ZONE;
+ALTER TABLE subjects ADD COLUMN IF NOT EXISTS deactivated_by      VARCHAR(100);
+ALTER TABLE subjects ADD COLUMN IF NOT EXISTS patient_id          UUID REFERENCES patients(patient_id);
+CREATE INDEX IF NOT EXISTS idx_subjects_qr_token  ON subjects(qr_token);
+CREATE INDEX IF NOT EXISTS idx_subjects_patient   ON subjects(patient_id);
+
+
+-- Migrate existing study_team_members tables (no-op on fresh databases)
+ALTER TABLE study_team_members ADD COLUMN IF NOT EXISTS co_investigator_id          UUID;
+ALTER TABLE study_team_members ADD COLUMN IF NOT EXISTS crc_id                      UUID;
+ALTER TABLE study_team_members ADD COLUMN IF NOT EXISTS cro_id                      UUID;
+ALTER TABLE study_team_members ADD COLUMN IF NOT EXISTS hospital_id                 UUID;
+ALTER TABLE study_team_members ADD COLUMN IF NOT EXISTS can_create_study            BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE study_team_members ADD COLUMN IF NOT EXISTS study_creation_granted_at   TIMESTAMP WITH TIME ZONE;
+ALTER TABLE study_team_members ADD COLUMN IF NOT EXISTS study_creation_granted_by   VARCHAR(200);
+
+-- Link studies to study_teams (no-op on fresh databases)
+ALTER TABLE studies ADD COLUMN IF NOT EXISTS trial_id UUID REFERENCES study_teams(trial_id);
+
+-- Study template fields (no-op on fresh databases)
+ALTER TABLE studies           ADD COLUMN IF NOT EXISTS indication          VARCHAR(500);
+ALTER TABLE study_plan_visits ADD COLUMN IF NOT EXISTS duration_value      INTEGER;
+ALTER TABLE study_plan_visits ADD COLUMN IF NOT EXISTS duration_unit       VARCHAR(10)
+    CHECK (duration_unit IN ('DAYS','WEEKS','MONTHS'));
+
+
+-- ══════════════════════════════════════════════════════════════════════
+-- B2B GST BILLING MODULE
+-- Supports CGST+SGST (intra-state) and IGST (inter-state) invoicing,
+-- Razorpay B2B order creation, and GSTR-1 monthly export.
+-- ══════════════════════════════════════════════════════════════════════
+
+-- ┌─────────────────────────────────────────────────────────────────┐
+-- │ GST BILLING PROFILE (doctor/hospital business identity)         │
+-- └─────────────────────────────────────────────────────────────────┘
+CREATE TABLE IF NOT EXISTS gst_billing_profile (
+    id                   BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+    business_name        VARCHAR(250) NOT NULL,
+    gstin                VARCHAR(15)  NOT NULL UNIQUE,
+    place_of_supply_code VARCHAR(2)   NOT NULL,
+    billing_state        VARCHAR(100),
+    registered_address   VARCHAR(500),
+    business_email       VARCHAR(200),
+    itc_eligible         BOOLEAN      NOT NULL DEFAULT TRUE,
+    -- Exactly one of pi_id / hospital_id must be set (enforced at application layer).
+    pi_id                UUID         REFERENCES primary_investigators(pi_id),
+    hospital_id          UUID         REFERENCES hospitals(hospital_id),
+    created_at           TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_gbp_gstin ON gst_billing_profile(gstin);
+
+-- ┌─────────────────────────────────────────────────────────────────┐
+-- │ TAX INVOICE (Section 31 CGST Act 2017 compliant)               │
+-- │ Once status = PAID the row must not be edited.                  │
+-- │ Corrections use Credit/Debit Notes (future feature).            │
+-- └─────────────────────────────────────────────────────────────────┘
+CREATE TABLE IF NOT EXISTS tax_invoice (
+    id                   BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+    invoice_number       VARCHAR(20)   NOT NULL UNIQUE,
+    invoice_date         DATE          NOT NULL,
+    status               VARCHAR(20)   NOT NULL DEFAULT 'DRAFT'
+                         CHECK (status IN ('DRAFT','PAID','CANCELLED')),
+    tax_type             VARCHAR(15)   NOT NULL
+                         CHECK (tax_type IN ('CGST_SGST','IGST')),
+    billing_profile_id   BIGINT        NOT NULL REFERENCES gst_billing_profile(id),
+    service_description  VARCHAR(500)  NOT NULL,
+    sac_code             VARCHAR(10)   NOT NULL,
+    base_amount          DECIMAL(12,2) NOT NULL,
+    cgst_rate            DECIMAL(5,2)  NOT NULL DEFAULT 0.00,
+    cgst_amount          DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+    sgst_rate            DECIMAL(5,2)  NOT NULL DEFAULT 0.00,
+    sgst_amount          DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+    igst_rate            DECIMAL(5,2)  NOT NULL DEFAULT 0.00,
+    igst_amount          DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+    total_amount         DECIMAL(12,2) NOT NULL,
+    razorpay_order_id    VARCHAR(100),
+    razorpay_payment_id  VARCHAR(100),
+    place_of_supply      VARCHAR(2)    NOT NULL,
+    reference_id         VARCHAR(100),
+    subscription_months  INTEGER       NOT NULL DEFAULT 1,
+    subscription_start_date DATE,
+    subscription_end_date   DATE,
+    created_at           TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    paid_at              TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_ti_invoice_number ON tax_invoice(invoice_number);
+CREATE INDEX IF NOT EXISTS idx_ti_razorpay_order ON tax_invoice(razorpay_order_id);
+CREATE INDEX IF NOT EXISTS idx_ti_status_date    ON tax_invoice(status, invoice_date);
+
+-- Subscription columns added for subscription-based billing (idempotent for existing DBs)
+ALTER TABLE tax_invoice ADD COLUMN IF NOT EXISTS subscription_months     INTEGER NOT NULL DEFAULT 1;
+ALTER TABLE tax_invoice ADD COLUMN IF NOT EXISTS subscription_start_date DATE;
+ALTER TABLE tax_invoice ADD COLUMN IF NOT EXISTS subscription_end_date   DATE;
+
+-- ┌─────────────────────────────────────────────────────────────────┐
+-- │ TAX INVOICE SEQUENCE                                            │
+-- │ One row per calendar month; next_seq incremented atomically     │
+-- │ under pessimistic lock to guarantee sequential invoice numbers. │
+-- └─────────────────────────────────────────────────────────────────┘
+CREATE TABLE IF NOT EXISTS tax_invoice_sequence (
+    year_month  VARCHAR(7) PRIMARY KEY,
+    next_seq    INT        NOT NULL DEFAULT 1,
+    version     INT        NOT NULL DEFAULT 0
+);
+ALTER TABLE study_plan_visits ADD COLUMN IF NOT EXISTS patient_instruction VARCHAR(2000);
+
+
+-- ┌─────────────────────────────────────────────────────────────────┐
+-- │ CLINICAL VISIT TYPES (reference / lookup table)                 │
+-- └─────────────────────────────────────────────────────────────────┘
+CREATE TABLE IF NOT EXISTS clinical_visit_types (
+    code         VARCHAR(50)  NOT NULL PRIMARY KEY,
+    display_name VARCHAR(100) NOT NULL,
+    description  VARCHAR(500),
+    sort_order   INTEGER      NOT NULL DEFAULT 0,
+    is_active    BOOLEAN      NOT NULL DEFAULT TRUE
+);
+
+-- ══════════════════════════════════════════════════════════════════════
+-- SUBSCRIPTION BILLING MODULE
+-- Monthly flat-rate billing per study; subjects cannot be enrolled
+-- until the current month's subscription is PAID.
+-- ══════════════════════════════════════════════════════════════════════
+
+-- ┌─────────────────────────────────────────────────────────────────┐
+-- │ SUBSCRIPTION CONFIG (singleton row, id=1)                       │
+-- │ Admin sets the monthly rate here; default ₹299.                 │
+-- └─────────────────────────────────────────────────────────────────┘
+CREATE TABLE IF NOT EXISTS subscription_config (
+    id           BIGINT       NOT NULL DEFAULT 1 PRIMARY KEY,
+    monthly_rate DECIMAL(10,2) NOT NULL DEFAULT 299.00,
+    updated_at   TIMESTAMP,
+    updated_by   VARCHAR(200)
+);
+
+-- Seed the default config row so the GET endpoint never returns 404
+MERGE INTO subscription_config (id, monthly_rate) KEY(id) VALUES (1, 299.00);
+
+-- ┌─────────────────────────────────────────────────────────────────┐
+-- │ STUDY SUBSCRIPTIONS (one row per PI per calendar month)         │
+-- │ A single PAID record covers ALL studies owned by that PI.       │
+-- └─────────────────────────────────────────────────────────────────┘
+CREATE TABLE IF NOT EXISTS study_subscriptions (
+    subscription_id          UUID          DEFAULT RANDOM_UUID() PRIMARY KEY,
+    pi_id                    UUID          NOT NULL REFERENCES primary_investigators(pi_id),
+    billing_year             INTEGER       NOT NULL,
+    billing_month            INTEGER       NOT NULL CHECK (billing_month BETWEEN 1 AND 12),
+    duration_months          INTEGER       NOT NULL DEFAULT 1,
+    subscription_start_date  DATE,
+    subscription_end_date    DATE,
+    amount                   DECIMAL(10,2) NOT NULL,
+    status                   VARCHAR(10)   NOT NULL DEFAULT 'PENDING'
+                             CHECK (status IN ('PENDING', 'PAID')),
+    paid_at                  TIMESTAMP,
+    paid_by                  VARCHAR(200),
+    payment_reference        VARCHAR(200),
+    created_at               TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (pi_id, billing_year, billing_month)
+);
+
+CREATE INDEX IF NOT EXISTS idx_study_sub_pi    ON study_subscriptions(pi_id);
+CREATE INDEX IF NOT EXISTS idx_study_sub_month ON study_subscriptions(billing_year, billing_month);
+
+-- Subscription coverage columns added later (idempotent for existing DBs)
+ALTER TABLE study_subscriptions ADD COLUMN IF NOT EXISTS duration_months       INTEGER NOT NULL DEFAULT 1;
+ALTER TABLE study_subscriptions ADD COLUMN IF NOT EXISTS subscription_start_date DATE;
+ALTER TABLE study_subscriptions ADD COLUMN IF NOT EXISTS subscription_end_date   DATE;

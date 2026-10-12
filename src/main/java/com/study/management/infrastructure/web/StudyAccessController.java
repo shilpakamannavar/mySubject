@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -25,6 +26,7 @@ public class StudyAccessController {
         this.accessUseCase = accessUseCase;
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Grant access to a study")
     @PostMapping
     public ResponseEntity<AccessResponse> grantAccess(@PathVariable UUID studyId,
@@ -45,6 +47,7 @@ public class StudyAccessController {
         return ResponseEntity.ok(accessList.stream().map(this::toResponse).collect(Collectors.toList()));
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Revoke access")
     @DeleteMapping("/{accessId}")
     public ResponseEntity<AccessResponse> revokeAccess(@PathVariable UUID studyId,

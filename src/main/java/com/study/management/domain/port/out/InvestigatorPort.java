@@ -12,6 +12,9 @@ import java.util.UUID;
 public interface InvestigatorPort {
     PrimaryInvestigator save(PrimaryInvestigator pi);
     Optional<PrimaryInvestigator> findById(UUID piId);
+    List<PrimaryInvestigator> findAll();
+    Optional<PrimaryInvestigator> findByPhone(String phone);
+    Optional<PrimaryInvestigator> findByEmail(String email);
     boolean existsByEmail(String email);
     PiCenterAssignment saveAssignment(PiCenterAssignment assignment);
     List<PiCenterAssignment> findAssignmentsByPi(PrimaryInvestigator pi);

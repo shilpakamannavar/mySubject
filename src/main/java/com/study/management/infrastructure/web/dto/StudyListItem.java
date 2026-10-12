@@ -12,9 +12,8 @@ public class StudyListItem {
     private UUID studyId;
     private String studyNumber;
     private String studyName;
-    private String indication;
+    private String title;
     private StudyPhase phase;
-    private String sponsorName;
     private ClinicalStudyStatus status;
     private Integer noOfPatientsToEnroll;
     private BigDecimal totalCost;
@@ -26,12 +25,10 @@ public class StudyListItem {
     public void setStudyNumber(String v)           { this.studyNumber = v; }
     public String getStudyName()                    { return studyName; }
     public void setStudyName(String v)             { this.studyName = v; }
-    public String getIndication()                   { return indication; }
-    public void setIndication(String v)            { this.indication = v; }
+    public String getTitle()                        { return title; }
+    public void setTitle(String v)                 { this.title = v; }
     public StudyPhase getPhase()                    { return phase; }
     public void setPhase(StudyPhase v)             { this.phase = v; }
-    public String getSponsorName()                  { return sponsorName; }
-    public void setSponsorName(String v)           { this.sponsorName = v; }
     public ClinicalStudyStatus getStatus()          { return status; }
     public void setStatus(ClinicalStudyStatus v)   { this.status = v; }
     public Integer getNoOfPatientsToEnroll()        { return noOfPatientsToEnroll; }

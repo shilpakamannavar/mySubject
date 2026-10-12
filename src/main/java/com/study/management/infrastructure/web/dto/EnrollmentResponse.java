@@ -28,6 +28,7 @@ public class EnrollmentResponse {
     private String consentVersion;
     private EnrollmentStatus enrollmentStatus;
     private List<VisitItem> generatedVisits;
+    private List<PatientStudyLogResponse> studyPlan;
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
 
@@ -69,6 +70,8 @@ public class EnrollmentResponse {
     public void setEnrollmentStatus(EnrollmentStatus v) { this.enrollmentStatus = v; }
     public List<VisitItem> getGeneratedVisits()     { return generatedVisits; }
     public void setGeneratedVisits(List<VisitItem> v) { this.generatedVisits = v; }
+    public List<PatientStudyLogResponse> getStudyPlan() { return studyPlan; }
+    public void setStudyPlan(List<PatientStudyLogResponse> v) { this.studyPlan = v; }
     public OffsetDateTime getCreatedAt()            { return createdAt; }
     public void setCreatedAt(OffsetDateTime v)     { this.createdAt = v; }
     public OffsetDateTime getUpdatedAt()            { return updatedAt; }

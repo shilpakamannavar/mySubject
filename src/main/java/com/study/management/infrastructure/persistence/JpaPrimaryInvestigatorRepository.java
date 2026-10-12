@@ -12,5 +12,6 @@ interface JpaPrimaryInvestigatorRepository extends JpaRepository<PrimaryInvestig
     Optional<PrimaryInvestigator> findByPiNumber(String piNumber);
     List<PrimaryInvestigator> findByStatus(PiStatus status);
     Optional<PrimaryInvestigator> findByEmailIgnoreCase(String email);
+    Optional<PrimaryInvestigator> findByPhone(String phone);
     boolean existsByEmail(String email);
 }
